@@ -118,6 +118,7 @@ class Canvas(tkinter.Canvas):
         # not call handlers when we are waiting for click
         self.wait_for_click_click_happened = False
         self.currently_waiting_for_click = False
+        self.last_click = []
 
         # bind events
         self.focus_set()
@@ -236,10 +237,15 @@ class Canvas(tkinter.Canvas):
         """
         self.currently_waiting_for_click = True
         self.wait_for_click_click_happened = False
+        self.last_click = []
         while not self.wait_for_click_click_happened:
             self.update()
         self.currently_waiting_for_click = False
         self.wait_for_click_click_happened = False
+
+        # [CIP]
+        # Save the location of the mouse click
+        self.last_click = [self.get_mouse_x(), self.get_mouse_y()]
 
     def get_mouse_x(self):
         """
@@ -324,6 +330,23 @@ class Canvas(tkinter.Canvas):
         self.mouse_presses = []
         return presses
 
+    
+    def get_last_click(self):
+        """
+        [CIP]
+        Returns the location of the last mouse click since this function was called. Returns null if there have been 
+        no clicks. Will clear self.mouse_presses.
+        """
+        clicks = self.get_new_mouse_clicks()
+        if clicks:
+            # Click queue not empty, return last element in list
+            return [clicks[-1].x, clicks[-1].y]
+
+        elif self.last_click:
+            # Click queue is empty, return current mouse location
+            return self.last_click
+        return None
+
     def get_new_key_presses(self):
         """
         Returns a list of all key presses that have occurred since the last call to this function or any registered
@@ -337,6 +360,19 @@ class Canvas(tkinter.Canvas):
         presses = self.key_presses
         self.key_presses = []
         return presses
+
+    def get_last_key_press(self):
+        """
+        [CIP]
+        Returns the last key which was pressed by the user on the keyboard. Returns null if there have been no 
+        key presses. Will clear self.key_presses.
+        """
+        keys = self.get_new_key_presses()
+        if keys:
+            if keys[-1].char:
+                return keys[-1].char
+            return keys[-1].keysym
+        return None
 
     def create_button(self, title, location, **kwargs):
         """
@@ -553,13 +589,21 @@ class Canvas(tkinter.Canvas):
         Sets the fill color of the specified graphical object.  Cannot be used to change the fill color of non-fillable objects such as images - throws a tkinter.TclError.
         Args:
             obj: the object for which to set the fill fill
-            fill_fill: the fill to set the fill fill to be, as a string.  If this is the empty string,
+            fill_color: the fill to set the fill fill to be, as a string.  If this is the empty string,
                 the object will be set to be not filled.
         """
         try:
             self.itemconfig(obj, fill=fill_color)
         except tkinter.TclError:
             raise tkinter.TclError("You can't set the fill fill on this object")
+
+    def set_color(self, obj, color):
+        """
+        [CIP]
+        Sets the fill color of the object with the specified objectId on the canvas to the specified color. 
+        The color parameter can be any valid CSS color value.
+        """
+        self.set_fill_color(obj, color)
 
     def set_outline_color(self, obj, outline_color):
         """
@@ -659,6 +703,16 @@ class Canvas(tkinter.Canvas):
         return super(Canvas, self).create_oval(
             x1, y1, x2, y2, fill=fill, outline=outline, width=width)
 
+    def create_polygon(self, *args, fill="black", outline=None, width=1, color=None):
+        """
+        [CIP]
+        Create a new polygon by passing through a series of points, as a list of arguments
+        """
+        if color is not None:
+            fill = color
+
+        return super(Canvas, self).create_polygon(*args, fill=fill, outline=outline, width=width)      
+
     def create_text(self, x, y, text, font = "Arial", font_size="12", fill="black", anchor = "nw", color=None):
         """
         Creates and returns a text graphical object on the screen at the specified location with the specified text.
@@ -677,6 +731,14 @@ class Canvas(tkinter.Canvas):
             fill = color
         # self.canvas.create_text(x, y, text=text_content, font=(font, font_size), color=color, anchor="center")
         return super().create_text(x, y, anchor=anchor, font=(font, font_size), text=text, fill=fill)
+
+    def change_text(self, obj, text):
+        """
+        [CIP]
+        Changes the text content of the text object referenced by objectId to the string passed in as new_text
+        """
+        self.set_text(obj, text)
+
 
     def set_text(self, obj, text):
         """
@@ -774,6 +836,27 @@ class Canvas(tkinter.Canvas):
             obj: the object to put behind all other objects on the canvas
         """
         self.lower_behind(obj, 'all')
+
+    def set_hidden(self, obj, is_hidden):
+        """
+        [CIP]
+        Set whether a shape is visible. If is_hidden is true, the object will become hidden, 
+        if it is false, it will become unhidden.
+        """        
+        if is_hidden:
+            self.itemconfigure(obj, state='hidden')
+        else:
+            self.itemconfigure(obj, state='normal')
+
+    def coords(self, obj):
+        """
+        [CIP]
+        Returns an list of coordinates of the object that is formatted as [left_x, top_y]
+        """
+        coords = super().coords(obj)
+        if coords:
+            return [ int(coords[0]), int(coords[1]) ]
+        return coords
 
     def lower_behind(self, obj, behind):
         """
