@@ -1,3 +1,7 @@
+import random
+
+NUM_PAIRS = 4
+
 def main():
     """
     You should write your code here. Make sure to delete 
