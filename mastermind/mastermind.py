@@ -113,14 +113,15 @@ class Guess:
                 ))   
 
         # Draw the check button
-        x += 2*(KEY_SIZE+KEY_PADDING) + CODE_PADDING
+        #x += 2*(KEY_SIZE+KEY_PADDING) + CODE_PADDING
+        x = self.left_x + (CODE_SIZE+CODE_PADDING)*NUM_CIRCLES
         self.button = self.canvas.create_rectangle(
             x,
             self.top_y,
             x + BUTTON_WIDTH,
             self.top_y + BUTTON_HEIGHT,
             fill,
-            fill
+            outline
         )
 
         # Draw the label
@@ -134,36 +135,47 @@ class Guess:
             label,
             font_size = font_size,
             font = font,
-            color = fill
+            color = outline
         )
+
+        # Hide controls
+        self.hide_button()
+        self._toggle_keys(True)
+
+    def _toggle_keys(self, is_hidden):
+        for key in self.keys:
+            self.canvas.set_hidden(key, is_hidden)
+
+        # Update
+        self.canvas.update()
         
     def hide_button(self):
         """
         Hide the 'Check' button
-        [issue] Wanted to move the button to where the key pegs are, but
-        canvas.move() does not work on text objects
         """
-        self.canvas.set_outline_color(self.button, 'white')
-        self.canvas.set_color(self.button_label, 'white')
+        # Hide button
+        self.canvas.set_hidden(self.button_label, True)
+        self.canvas.set_hidden(self.button, True)
 
-        """
-        [issue] Causes error halfway through rendering the rows:
-        TypeError: 'Canvas' object is not callable
-        """
-        #self.canvas.set_hidden(self.button_label, False)
-        #self.canvas.set_hidden(self.button, False)
+        # Show keys
+        self._toggle_keys(False)
+
+        # Update
+        self.canvas.update()
 
     def show_button(self):
-        # Show and move button
-        self.canvas.set_outline_color(self.button, 'black')
-        self.canvas.set_color(self.button_label, 'black')
+        """
+        Show the 'Check' button
+        """
+        # Show button
+        self.canvas.set_hidden(self.button_label, False)
+        self.canvas.set_hidden(self.button, False)
 
-        """
-        [issue] Causes error halfway through rendering the rows:
-        TypeError: 'Canvas' object is not callable
-        """
-        #self.canvas.set_hidden(self.button_label, True)
-        #self.canvas.set_hidden(self.button, True)        
+        # Hide keys
+        self._toggle_keys(True)
+
+        # Update
+        self.canvas.update()
 
     def set_guess(self, code, color):
 
@@ -174,6 +186,9 @@ class Guess:
         # Update the color
         self.canvas.set_color(code, color)
         #print("Current guess:", self.guesses)
+
+        # Update
+        self.canvas.update()        
 
 
     def check(self, truth):
@@ -203,18 +218,45 @@ class Guess:
         for i in unmatched_indices:
             if self.guesses[i] in unmatched_truth:
                 key_matches.append(partial_color)
+                unmatched_truth.remove(self.guesses[i])
 
         # Update the key graphics
         print(key_matches)
         for i in range(len(key_matches)):
             print(i)
             self.canvas.set_color(self.keys[i], key_matches[i])
+
+        # Update
+        self.canvas.update()            
         
         return self.guesses == truth
 
 def game_over(canvas, is_winner):
+    """
+    Show appropriate game over message
+    """
     print("GAME OVER!", is_winner)
-    pass
+    x = 100
+    y = CANVAS_HEIGHT/2
+    font_size = 50
+    text = "GAME OVER"
+    if is_winner:
+        text = "YOU WIN!"
+        x = 130
+    
+    canvas.create_rectangle(
+        0, y, CANVAS_WIDTH, y+font_size, 'white'
+    )
+    canvas.create_text(
+        x,
+        y,
+        text = text,
+        font_size = font_size,
+        color = 'black'
+    ) 
+
+    # Update
+    canvas.update()    
 
 def play_row(canvas, guess, color_picker, truth):
     is_correct = False
@@ -328,75 +370,8 @@ def main():
     # Done!
     game_over(canvas, is_winner)
 
-
-    return
-
-
-
-    while True:
-        # Select a color
-        canvas.wait_for_click()
-        click = canvas.get_last_click()
-        if click:
-            mouse_x = click[0]
-            mouse_y = click[1]            
-            overlapping_color = canvas.find_overlapping(
-                mouse_x,
-                mouse_y,
-                mouse_x,
-                mouse_y
-            )
-            if overlapping_color and overlapping_color[0] in colors.keys():
-                selected_color = colors[overlapping_color[0]]
-                print("Selected color:", selected_color)
-                
-                color_dragger = canvas.create_oval(
-                    -100,
-                    -100,
-                    -100 + CODE_SIZE,
-                    -100 + CODE_SIZE,
-                    selected_color
-                )
-                while True:
-                    mouse_x = canvas.get_mouse_x()
-                    mouse_y = canvas.get_mouse_y()
-
-                    canvas.moveto(
-                        color_dragger, 
-                        mouse_x - CODE_SIZE/2,
-                        mouse_y - CODE_SIZE/2
-                    )
-                    
-                    clicks = canvas.get_new_mouse_clicks()
-                    if clicks:
-                        last_click_x, last_click_y = clicks[-1]
-                        overlapping_list = canvas.find_overlapping(
-                            last_click_x,
-                            last_click_y,
-                            last_click_x,
-                            last_click_y
-                        )
-                        if overlapping_list:
-                            for overlapping in overlapping_list:
-                                if overlapping == color_dragger:
-                                    # Ignore
-                                    pass
-                                elif overlapping in code_pegs:
-                                    # Code peg selected
-                                    canvas.set_color(overlapping, selected_color)
-                                else:
-                                    break
-                        canvas.delete(color_dragger)
-                        break 
-
-                    time.sleep(DELAY)   
-
-    # Done!
-    game_over(canvas)
-
     # wait for the user to close the window
-    canvas.mainloop()        
-
+    canvas.mainloop()    
 
     """
     4 circles
