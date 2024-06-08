@@ -119,7 +119,7 @@ class Guess:
             x + BUTTON_WIDTH,
             self.top_y + BUTTON_HEIGHT,
             fill,
-            fill
+            outline
         )
 
         # Draw the label
@@ -133,8 +133,9 @@ class Guess:
             label,
             font_size = font_size,
             font = font,
-            color = fill
+            color = outline
         )
+        self.hide_button()
         
     def hide_button(self):
         """
@@ -142,27 +143,13 @@ class Guess:
         [issue] Wanted to move the button to where the key pegs are, but
         canvas.move() does not work on text objects
         """
-        self.canvas.set_outline_color(self.button, 'white')
-        self.canvas.set_color(self.button_label, 'white')
-
-        """
-        [issue] Causes error halfway through rendering the rows:
-        TypeError: 'Canvas' object is not callable
-        """
-        #self.canvas.set_hidden(self.button_label, False)
-        #self.canvas.set_hidden(self.button, False)
+        self.canvas.set_hidden(self.button_label, True)
+        self.canvas.set_hidden(self.button, True)
 
     def show_button(self):
         # Show and move button
-        self.canvas.set_outline_color(self.button, 'black')
-        self.canvas.set_color(self.button_label, 'black')
-
-        """
-        [issue] Causes error halfway through rendering the rows:
-        TypeError: 'Canvas' object is not callable
-        """
-        #self.canvas.set_hidden(self.button_label, True)
-        #self.canvas.set_hidden(self.button, True)        
+        self.canvas.set_hidden(self.button_label, False)
+        self.canvas.set_hidden(self.button, False)        
 
     def set_guess(self, code, color):
 
@@ -202,6 +189,7 @@ class Guess:
         for i in unmatched_indices:
             if self.guesses[i] in unmatched_truth:
                 key_matches.append(partial_color)
+                unmatched_truth.remove(self.guesses[i])
 
         # Update the key graphics
         print(key_matches)
@@ -212,8 +200,28 @@ class Guess:
         return self.guesses == truth
 
 def game_over(canvas, is_winner):
+    """
+    Show appropriate game over message
+    """
     print("GAME OVER!", is_winner)
-    pass
+    x = 100
+    y = CANVAS_HEIGHT/2
+    font_size = 50
+    text = "GAME OVER"
+    if is_winner:
+        text = "YOU WIN!"
+        x = 130
+    
+    canvas.create_rectangle(
+        0, y, CANVAS_WIDTH, y+font_size, 'white'
+    )
+    canvas.create_text(
+        x,
+        y,
+        text = text,
+        font_size = font_size,
+        color = 'black'
+    )    
 
 def play_row(canvas, guess, color_picker, truth):
     is_correct = False
