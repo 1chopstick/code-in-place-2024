@@ -172,11 +172,43 @@ class Guess:
 
         # Update the color
         self.canvas.set_color(code, color)
-
-        print("Current guess:", self.guesses)
+        #print("Current guess:", self.guesses)
 
 
     def check(self, truth):
+        """
+        Update the key pegs and return True if the Code pegs matches the truth list
+        - red key means color and position is correct
+        - grey key means color is correct but position is incorrect
+        """
+
+        # Compare color of key pegs to truth
+        exact_color = 'red'
+        partial_color = 'grey'
+        key_matches = []
+        key_index = 0
+        unmatched_indices = []
+        unmatched_truth = []
+
+        # Check for exact matches
+        for i in range(NUM_CIRCLES):
+            if self.guesses[i] == truth[i]:
+                key_matches.append(exact_color)
+            else:
+                unmatched_indices.append(i)
+                unmatched_truth.append(truth[i])
+
+        # Check for partial matches
+        for i in unmatched_indices:
+            if self.guesses[i] in unmatched_truth:
+                key_matches.append(partial_color)
+
+        # Update the key graphics
+        print(key_matches)
+        for i in range(len(key_matches)):
+            print(i)
+            self.canvas.set_color(self.keys[i], key_matches[i])
+        
         return self.guesses == truth
 
 def game_over(canvas, is_winner):
@@ -210,12 +242,12 @@ def play_row(canvas, guess, color_picker, truth):
                 for obj in overlapping_color:
                     if obj == guess.button:
                         # Check button
-                        print("Clicked Check button")
+                        #print("Clicked Check button")
                         is_correct = guess.check(truth)
                         is_done = True
                     elif obj in color_picker.colors.keys():
                         selected_color = color_picker.colors[overlapping_color[0]]
-                        print("Selected color:", selected_color)
+                        #print("Selected color:", selected_color)
                         color_picker.set_color(selected_color)
                         
                         while True:
@@ -368,6 +400,9 @@ def main():
     white = correct color but wrong position
     code pegs
     key pegs
+    extensions:
+    - allow duplicates
+    - mobile friendly
 
     """
 
