@@ -13,6 +13,6 @@ Took the code from Version 1 and used graphics to represent the cards.
 Play it [here](https://codeinplace.stanford.edu/cip4/share/C9ltPTc1Y9TF75d5QNr3)
 
 ## Version 2: Graphical with Classes
-Version 1 needed too many variables to keep track of state, when they should really be stored in a Card object.
+Version 1 needed too many variables to keep track of state, created implementation with Card class to better manage variables.
 
 Play it [here](https://codeinplace.stanford.edu/cip4/share/lnaPDLEWdV1ebA7JjV2T)
