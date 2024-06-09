@@ -112,7 +112,8 @@ class Guess:
                 ))   
 
         # Draw the check button
-        x += 2*(KEY_SIZE+KEY_PADDING) + CODE_PADDING
+        #x += 2*(KEY_SIZE+KEY_PADDING) + CODE_PADDING
+        x = self.left_x + (CODE_SIZE+CODE_PADDING)*NUM_CIRCLES
         self.button = self.canvas.create_rectangle(
             x,
             self.top_y,
@@ -135,21 +136,36 @@ class Guess:
             font = font,
             color = outline
         )
+
+        # Hide controls
         self.hide_button()
-        
+        self._toggle_keys(True)
+
+    def _toggle_keys(self, is_hidden):
+        for key in self.keys:
+            self.canvas.set_hidden(key, is_hidden)
+
     def hide_button(self):
         """
         Hide the 'Check' button
-        [issue] Wanted to move the button to where the key pegs are, but
-        canvas.move() does not work on text objects
         """
+        # Hide button
         self.canvas.set_hidden(self.button_label, True)
         self.canvas.set_hidden(self.button, True)
 
+        # Show keys
+        self._toggle_keys(False)
+
     def show_button(self):
-        # Show and move button
+        """
+        Show the 'Check' button
+        """
+        # Show button
         self.canvas.set_hidden(self.button_label, False)
-        self.canvas.set_hidden(self.button, False)        
+        self.canvas.set_hidden(self.button, False)
+
+        # Hide keys
+        self._toggle_keys(True)   
 
     def set_guess(self, code, color):
 
