@@ -10,6 +10,6 @@ Should also put this function call at the end of your `main()` method to prevent
     # wait for the user to close the window
     canvas.mainloop()    
 ```
-
+Original graphics.zip downloaded from [here](https://cs106a.stanford.edu/graphics).
 
 
