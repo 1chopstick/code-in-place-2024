@@ -9,13 +9,15 @@ CODE_SIZE = 35
 CODE_PADDING = 20
 KEY_SIZE = 16
 KEY_PADDING = 4
+KEY_EXACT_COLOR = 'red'
+KEY_PARTIAL_COLOR = 'grey'
 BUTTON_WIDTH = 70
 BUTTON_HEIGHT = CODE_SIZE
 
 COLORS = ['red', 'orange', '#FEF250', 'green', 'blue', 'purple']
 
 CANVAS_WIDTH = 500
-CANVAS_HEIGHT = (MAX_GUESSES) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
+CANVAS_HEIGHT = (MAX_GUESSES+1) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
 DELAY = 0.1
 
 class ColorPicker:
@@ -221,9 +223,7 @@ class Guess:
                 unmatched_truth.remove(self.guesses[i])
 
         # Update the key graphics
-        print(key_matches)
         for i in range(len(key_matches)):
-            print(i)
             self.canvas.set_color(self.keys[i], key_matches[i])
 
         # Update
@@ -231,13 +231,59 @@ class Guess:
         
         return self.guesses == truth
 
-def game_over(canvas, is_winner):
+
+def display_info(canvas):
+    """
+    Show game play information at bottom of the screen
+    """
+    x = CODE_PADDING
+    y = (MAX_GUESSES) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
+
+    # Draw line
+    canvas.create_line(0, y, CANVAS_WIDTH, y, 'black')
+
+    # Add exact match info
+    x = CODE_PADDING
+    y += CODE_PADDING
+    canvas.create_oval(x, y, x+KEY_SIZE, y+KEY_SIZE, KEY_EXACT_COLOR, 'black')
+
+    x += KEY_SIZE + 2*KEY_PADDING
+    draw_info_text(canvas, x, y, "EXACT MATCH")
+
+    # Add partial match info
+    x += CODE_PADDING + 100
+    canvas.create_oval(x, y, x+KEY_SIZE, y+KEY_SIZE, KEY_PARTIAL_COLOR, 'black')
+
+    x += KEY_SIZE + 2*KEY_PADDING
+    draw_info_text(canvas, x, y, "PARTIAL MATCH")
+
+    # Add duplicate info
+    x += CODE_PADDING + 100
+    draw_info_text(canvas, x, y, "NO DUPLICATES")
+
+    # Update
+    canvas.update()          
+  
+def draw_info_text(canvas, x, y, text):
+    font_size = 12
+    font = 'sans-serif'
+    font_padding = 2
+
+    canvas.create_text(
+        x, 
+        y+font_padding, 
+        text=text,
+        font=font,
+        font_size = font_size,
+        color='black')    
+
+def game_over(canvas, truth, is_winner):
     """
     Show appropriate game over message
     """
     print("GAME OVER!", is_winner)
     x = 100
-    y = CANVAS_HEIGHT/2
+    y = CODE_PADDING + CODE_SIZE + CODE_PADDING - 5
     font_size = 50
     text = "GAME OVER"
     if is_winner:
@@ -245,7 +291,7 @@ def game_over(canvas, is_winner):
         x = 130
     
     canvas.create_rectangle(
-        0, y, CANVAS_WIDTH, y+font_size, 'white'
+        0, y, CANVAS_WIDTH, y+font_size+CODE_SIZE+CODE_PADDING, 'white'
     )
     canvas.create_text(
         x,
@@ -253,81 +299,85 @@ def game_over(canvas, is_winner):
         text = text,
         font_size = font_size,
         color = 'black'
-    ) 
+    )   
+
+    # Show solution
+    truth_x = NUM_CIRCLES*CODE_SIZE
+    truth_y = y + font_size
+    for i in range(NUM_CIRCLES):
+        canvas.create_oval(
+            truth_x + i*(CODE_SIZE + CODE_PADDING),
+            truth_y,
+            truth_x + i*(CODE_SIZE + CODE_PADDING) + CODE_SIZE,
+            truth_y + CODE_SIZE,
+            truth[i],
+            'black'
+        )
 
     # Update
-    canvas.update()    
+    canvas.update()         
+
+def get_overlapping(canvas):
+    """
+    Return list of shapes located at last mouse click
+    Returns [] if no clicks
+    """
+    clicks = canvas.get_new_mouse_clicks()
+    if clicks:
+        # [graphics.py]
+        last_click_x = clicks[-1].x
+        last_click_y = clicks[-1].y
+        overlapping_list = canvas.find_overlapping(
+            last_click_x, last_click_y, last_click_x, last_click_y)
+        return overlapping_list
+    return []
+
 
 def play_row(canvas, guess, color_picker, truth):
+    """
+    Handle playing a row of guesses. 
+    Actions are:
+    - Picking a new color
+    - Assiging a color to a Code peg
+    - Click on the Check button
+    """    
     is_correct = False
     is_done = False
-    selected_color = None
-
-    """
-    Options:
-    1. Pick a new color
-    2. Set color of Code peg
-    3. Click Check button
-    """    
+    selected_color = None 
     while not is_done:
 
-        # Select a color
-        canvas.wait_for_click()
-        click = canvas.get_last_click()
-        if click:
-            mouse_x, mouse_y = click      
-            overlapping_color = canvas.find_overlapping(
-                mouse_x, mouse_y, mouse_x, mouse_y
-            )
+        # Animation
+        if selected_color:
+            color_picker.update(canvas.get_mouse_x(), canvas.get_mouse_y())        
 
-            # Act on Color Picker or Button
-            if overlapping_color:
-                for obj in overlapping_color:
-                    if obj == guess.button:
-                        # Check button
-                        #print("Clicked Check button")
-                        is_correct = guess.check(truth)
-                        is_done = True
-                    elif obj in color_picker.colors.keys():
-                        selected_color = color_picker.colors[overlapping_color[0]]
-                        #print("Selected color:", selected_color)
-                        color_picker.set_color(selected_color)
-                        
-                        while True:
-                            color_picker.update(canvas.get_mouse_x(), canvas.get_mouse_y())
-                            clicks = canvas.get_new_mouse_clicks()
-                            if clicks:
-                                # [CIP]
-                                last_click_x = clicks[-1].x
-                                last_click_y = clicks[-1].y
-                                overlapping_list = canvas.find_overlapping(
-                                    last_click_x, last_click_y, last_click_x, last_click_y)
-                                
-                                # Act on Code or Button
-                                if overlapping_list:
-                                    for overlapping in overlapping_list:
-                                        if overlapping == color_picker.dragger:
-                                            # Ignore
-                                            pass
-                                        elif overlapping in guess.codes:
-                                            # Code peg selected
-                                            guess.set_guess(overlapping, selected_color)
-                                            break
-                                        elif overlapping == guess.button:
-                                            # Check button
-                                            print("Clicked Check button")
-                                            is_correct = guess.check(truth)
-                                            is_done = True
-                                            break
-                                        else:
-                                            break
-                                color_picker.reset()
-                                break 
+        overlapping_list = get_overlapping(canvas)
+        if overlapping_list:
+            for overlapping in overlapping_list:
+                if overlapping == guess.button:
+                    # Clicked on Check button
+                    is_correct = guess.check(truth)
+                    is_done = True
+                    selected_color = None
+                    color_picker.reset()
+                    #print("Check button")
+                elif selected_color is None and overlapping in color_picker.colors.keys():
+                    # Clicked on color picker
+                    selected_color = color_picker.colors[overlapping]                    
+                    color_picker.set_color(selected_color)
+                    #print("Selected color:", selected_color)
+                elif overlapping == color_picker.dragger:
+                    # Ignore mouse dragger
+                    pass
+                elif selected_color and overlapping in guess.codes:
+                    # Clicked on code peg
+                    guess.set_guess(overlapping, selected_color)
+                    selected_color = None
+                    color_picker.reset()
 
-                            # Sleep
-                            time.sleep(DELAY)    
-                            canvas.update() 
-
+        # Sleep
+        canvas.update() 
+        time.sleep(DELAY)
+        
     return is_correct
 
 def main():
@@ -335,10 +385,11 @@ def main():
     Main method
     """
     canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+    display_info(canvas)
 
     # Create the code
     truth = random.sample(COLORS, 4)
-    print(truth)
+    #print(truth)
     is_winner = False
 
     # Create the guess rows
@@ -368,7 +419,7 @@ def main():
             guesses[i].hide_button()
 
     # Done!
-    game_over(canvas, is_winner)
+    game_over(canvas, truth, is_winner)
 
     # wait for the user to close the window
     canvas.mainloop()    
