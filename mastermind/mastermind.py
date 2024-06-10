@@ -3,8 +3,7 @@ import random
 import time
 
 NUM_CIRCLES = 4
-#MAX_GUESSES = 12
-MAX_GUESSES = 10
+MAX_GUESSES = 12
 
 CODE_SIZE = 35
 CODE_PADDING = 20
