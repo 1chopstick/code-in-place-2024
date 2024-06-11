@@ -1,5 +1,6 @@
 from graphics import Canvas
 import random
+import math
 
 NUM_CIRCLES = 4
 MAX_GUESSES = 12
@@ -14,18 +15,32 @@ BUTTON_WIDTH = 70
 BUTTON_HEIGHT = CODE_SIZE
 
 COLORS = ['red', 'orange', '#FEF250', 'green', 'blue', 'purple']
+MEDIUM_COLORS = ['salmon']
+HARD_COLORS = ['salmon', 'brown', 'black']
 EMPTY_FILL_COLOR = 'white'
 OUTLINE_COLOR = 'black'
 
 CANVAS_WIDTH = 500
-CANVAS_HEIGHT = (MAX_GUESSES+2) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
+CANVAS_HEIGHT = max(MAX_GUESSES+2, len(COLORS)+len(HARD_COLORS)+2) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
 DELAY = 0.1
 
+class GameSettings:
+    def __init__(self):
+        self.difficulty = 1
+        self.has_duplicates = False
+
+    def render(self, canvas):
+        pass
+
+    def handle_config(self, canvas):
+        pass
+
 class ColorPicker:
-    def __init__(self, canvas, x, y):
+    def __init__(self, canvas, x, y, colors):
         self.left_x = x
         self.top_y = y
-        self.colors = {}
+        self.colors = colors
+        self.palette = {}
         self.dragger = None
         self.selected_color = None
 
@@ -33,14 +48,14 @@ class ColorPicker:
         """
         Draw the color swatches
         """
-        for i in range(len(COLORS)):
-            self.colors[canvas.create_oval(
+        for i in range(len(self.colors)):
+            self.palette[canvas.create_oval(
                 self.left_x,
                 self.top_y + i*(CODE_SIZE+CODE_PADDING),
                 self.left_x + CODE_SIZE,
                 self.top_y + i*(CODE_SIZE+CODE_PADDING) + CODE_SIZE,
-                COLORS[i]
-            )] = COLORS[i]
+                self.colors[i]
+            )] = self.colors[i]
 
         # Create color dragger
         self.dragger = canvas.create_oval(
@@ -48,7 +63,7 @@ class ColorPicker:
             -100,
             -100 + CODE_SIZE,
             -100 + CODE_SIZE,
-            'white'
+            EMPTY_FILL_COLOR
         )
     
     def update(self, canvas, x, y):
@@ -69,11 +84,12 @@ class ColorPicker:
 
 class Guess:
 
-    def __init__(self, canvas, x, y):
+    def __init__(self, canvas, x, y, num_pegs):
         self.left_x = x
         self.top_y = y
-        self.guesses = ['' for _ in range(NUM_CIRCLES)]
-        self.codes = []        
+        self.guesses = ['' for _ in range(num_pegs)]
+        self.codes = []
+        self.num_pegs = num_pegs
         self.button = None
         self.button_label = None
 
@@ -82,7 +98,7 @@ class Guess:
         Draw the code pegs and key pegs
         """
         # Draw the code pegs
-        for i in range(NUM_CIRCLES):
+        for i in range(self.num_pegs):
             self.codes.append(canvas.create_oval(
                 self.left_x + i*(CODE_SIZE+CODE_PADDING),
                 self.top_y,
@@ -97,10 +113,10 @@ class Guess:
         Render the feedback key pegs
         """
         # Draw the key pegs
-        x = self.left_x + (CODE_SIZE+CODE_PADDING)*NUM_CIRCLES
+        x = self.left_x + (CODE_SIZE+CODE_PADDING)*self.num_pegs
         color_index = 0
-        for i in range(NUM_CIRCLES//2):
-            for j in range(NUM_CIRCLES//2):
+        for i in range(2):
+            for j in range(self.num_pegs//2):
                 canvas.create_oval(
                     x + j*(KEY_SIZE+KEY_PADDING),
                     self.top_y + i*(KEY_SIZE+KEY_PADDING),
@@ -116,7 +132,7 @@ class Guess:
         Render the check button
         """
         # Draw the Check button
-        x = self.left_x + (CODE_SIZE+CODE_PADDING)*NUM_CIRCLES
+        x = self.left_x + (CODE_SIZE+CODE_PADDING)*self.num_pegs
         self.button = canvas.create_rectangle(
             x,
             self.top_y,
@@ -172,7 +188,7 @@ class Guess:
         unmatched_truth = []
 
         # Check for exact matches
-        for i in range(NUM_CIRCLES):
+        for i in range(self.num_pegs):
             if self.guesses[i] == truth[i]:
                 key_matches.append(KEY_EXACT_COLOR)
             else:
@@ -192,7 +208,7 @@ class Guess:
         self.button_label = None
 
         # Render the key pegs
-        peg_colors = [ EMPTY_FILL_COLOR for _ in range(NUM_CIRCLES)]
+        peg_colors = [ EMPTY_FILL_COLOR for _ in range(self.num_pegs)]
         for i in range(len(key_matches)):
             peg_colors[i] = key_matches[i]
         self._render_keys(canvas, peg_colors)
@@ -201,7 +217,7 @@ class Guess:
 
 
 
-def game_over(canvas, truth, is_winner):
+def game_over(canvas, truth, is_winner, num_pegs):
     """
     Show appropriate game over message
     """
@@ -232,9 +248,9 @@ def game_over(canvas, truth, is_winner):
     )   
 
     # Show solution
-    truth_x = NUM_CIRCLES*CODE_SIZE
+    truth_x = num_pegs*CODE_SIZE
     truth_y = y + font_size + padding
-    for i in range(NUM_CIRCLES):
+    for i in range(num_pegs):
         canvas.create_oval(
             truth_x + i*(CODE_SIZE + CODE_PADDING),
             truth_y,
@@ -285,9 +301,9 @@ def play_row(canvas, guess, color_picker, truth):
                     selected_color = None
                     color_picker.reset(canvas)
 
-                elif selected_color is None and overlapping in color_picker.colors.keys():
+                elif selected_color is None and overlapping in color_picker.palette.keys():
                     # Clicked on color picker
-                    selected_color = color_picker.colors[overlapping]                    
+                    selected_color = color_picker.palette[overlapping]                    
                     color_picker.set_color(canvas, selected_color)
 
                 elif overlapping == color_picker.dragger:
@@ -321,12 +337,28 @@ def display_header(canvas):
         font_size = font_size,
         color='black')     
 
-def display_info(canvas):
+def display_difficulty(canvas, difficulty):
+    """
+    Render difficulty info
+    """
+    x = CANVAS_WIDTH - 100
+    y = CODE_PADDING
+    text = "mode: "
+    if difficulty == 2:
+        text += "MEDIUM"
+    elif difficulty == 3:
+        text += "HARD"
+    else:
+        text += "EASY"
+
+    draw_info_text(canvas, x, y, text)
+
+def display_info(canvas, has_duplicates):
     """
     Render game play information at bottom of the screen
     """
     x = CODE_PADDING
-    y = (MAX_GUESSES+1) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
+    y = CANVAS_HEIGHT - (CODE_SIZE+CODE_PADDING)
 
     # Draw line
     canvas.create_line(0, y, CANVAS_WIDTH, y, 'black')
@@ -346,9 +378,12 @@ def display_info(canvas):
     x += KEY_SIZE + 2*KEY_PADDING
     draw_info_text(canvas, x, y, "PARTIAL MATCH")
 
-    # Add duplicate info
+    # Add duplicate info    
     x += CODE_PADDING + 100
-    draw_info_text(canvas, x, y, "NO DUPLICATES")
+    text = "NO DUPLICATES"
+    if has_duplicates:
+        text = "DUPLICATES ALLOWED"
+    draw_info_text(canvas, x, y, text)
   
 def draw_info_text(canvas, x, y, text):
     """
@@ -366,27 +401,40 @@ def draw_info_text(canvas, x, y, text):
         font_size = font_size,
         color='black')        
 
-def main():
+def play_mastermind(canvas, difficulty, has_duplicates):
     """
-    Main method
+    Play the game of mastermind
+    - EASY = 12 tries, 6 colors
+    - MEDIUM = 10 tries, 7 colors
+    - HARD = 8 tries, 9 colors
     """
-
-    # Setup
-    canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-    display_info(canvas)
-    display_header(canvas)
+    # Update the configuration
+    max_guesses = MAX_GUESSES
+    colors = COLORS
+    num_pegs = NUM_CIRCLES
+    if difficulty == 2:
+        # Medium mode
+        max_guesses = MAX_GUESSES - 2
+        colors = COLORS + MEDIUM_COLORS 
+    elif difficulty == 3:
+        # Hard mode
+        max_guesses = MAX_GUESSES - 4
+        colors = COLORS + HARD_COLORS 
 
     # Create the code
-    truth = random.sample(COLORS, 4)
-    #print(truth)
+    if has_duplicates:
+        truth = [random.choice(colors) for _ in range(num_pegs)]
+    else:
+        truth = random.sample(colors, num_pegs)
+    print(truth)
     is_winner = False
 
     # Create the guess rows
     guesses = []
     x = CODE_PADDING + CODE_SIZE + 2*CODE_PADDING
     y = CODE_PADDING + CODE_SIZE + CODE_PADDING
-    for i in range(MAX_GUESSES):
-        guess = Guess(canvas, x, y + i*(CODE_SIZE+CODE_PADDING))
+    for i in range(max_guesses):
+        guess = Guess(canvas, x, y + i*(CODE_SIZE+CODE_PADDING), num_pegs)
         guess.setup(canvas)
         guesses.append(guess)
         time.sleep(0)
@@ -394,11 +442,11 @@ def main():
     # Create color picker
     x = CODE_PADDING
     y = CODE_PADDING + CODE_SIZE + CODE_PADDING
-    color_picker = ColorPicker(canvas, x, y)
+    color_picker = ColorPicker(canvas, x, y, colors)
     color_picker.setup(canvas)
 
     # Play the game
-    for i in range(MAX_GUESSES):
+    for i in range(max_guesses):
 
         # Show button for active row
         guesses[i].show_button(canvas)
@@ -408,7 +456,33 @@ def main():
             break
 
     # Done!
-    game_over(canvas, truth, is_winner)
+    game_over(canvas, truth, is_winner, num_pegs)    
+
+
+
+def main():
+    """
+    Main method
+    """
+    # Setup
+    canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+    display_header(canvas)
+    
+    # User settings
+    settings = GameSettings()
+    settings.render(canvas)
+    settings.handle_config(canvas)
+
+    difficulty = settings.difficulty
+    has_duplicates = settings.has_duplicates
+
+    # Display info
+    display_difficulty(canvas, difficulty)
+    display_info(canvas, has_duplicates)
+
+    # Play the game
+    play_mastermind(canvas, difficulty, has_duplicates)
+
 
     """
     4 circles
