@@ -198,7 +198,14 @@ def main():
             canvas.moveto(ball, CANVAS_WIDTH/2 + BALL_RADIUS, CANVAS_HEIGHT/2 + BALL_RADIUS)
 
         # Check for collisions
-        collisions = canvas.find_overlapping(*get_corner_coordinates(canvas, ball))
+        coords = get_corner_coordinates(canvas, ball)
+        collisions = canvas.find_overlapping(
+            coords[0] - BALL_RADIUS,
+            coords[1] - BALL_RADIUS,
+            coords[2] + BALL_RADIUS,
+            coords[3] + BALL_RADIUS
+        )
+        #collisions = canvas.find_overlapping(*get_corner_coordinates(canvas, ball))
         for collision in collisions:
             if collision == ball:
                 # Ignore the ball
