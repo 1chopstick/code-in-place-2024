@@ -42,7 +42,7 @@ HARD_COLORS = ['salmon', 'brown', 'black']
 EMPTY_FILL_COLOR = 'white'
 OUTLINE_COLOR = 'black'
 
-CANVAS_WIDTH = 500
+CANVAS_WIDTH = 510
 CANVAS_HEIGHT = max(MAX_GUESSES+2, len(COLORS)+len(HARD_COLORS)+2) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
 DELAY = 0.1
 
@@ -57,6 +57,7 @@ class GameSettings:
         self.easy_button = []               # list of graphic objects in easy setting
         self.medium_button = []             # list of graphic objects in medium setting
         self.hard_button = []               # list of graphic objects in hard setting
+        self.expert_button = []             # list of graphic objects in expert setting
         self.difficulty_arrow = None        # selection arrow for difficulty setting
         self.duplicate_arrow = None         # selection arrow for duplicate setting
         self.yes_button = []                # list of graphic objects in yes setting
@@ -64,7 +65,7 @@ class GameSettings:
         self.start_button = []              # list of graphic objects in start button
         
         # maps [x,y] locations of selection arrow to selection
-        self.arrow_location = {1:[], 2:[], 3:[], "yes":[], "no":[]}
+        self.arrow_location = {1:[], 2:[], 3:[], 4:[], "yes":[], "no":[]}
 
     def render(self, canvas):
         """
@@ -145,7 +146,40 @@ class GameSettings:
 
         # Selector arrow
         x = CODE_PADDING
-        self.arrow_location[3] = [x, y]            
+        self.arrow_location[3] = [x, y]          
+
+        # Expert  
+        color = 'black'
+        x = CODE_PADDING + CODE_SIZE
+        y += CODE_SIZE + CODE_PADDING
+        self.expert_button.append(self._render_bg_button(canvas, x, y))
+        self.expert_button.append(
+            canvas.create_polygon(
+                x + CODE_SIZE/4, y,
+                x + CODE_SIZE/2, y + CODE_SIZE/2,
+                x + CODE_SIZE/4, y + CODE_SIZE,
+                x, y + CODE_SIZE/2,
+                color=color,
+                outline=OUTLINE_COLOR
+            )
+        )
+        self.expert_button.append(
+            canvas.create_polygon(
+                x + CODE_SIZE/4 + CODE_SIZE/2, y,
+                x + CODE_SIZE, y + CODE_SIZE/2,
+                x + CODE_SIZE/4 + CODE_SIZE/2, y + CODE_SIZE,
+                x + CODE_SIZE/2, y + CODE_SIZE/2,
+                color=color,
+                outline=OUTLINE_COLOR
+            )
+        )        
+        x = CODE_PADDING + 2*CODE_SIZE + CODE_PADDING
+        text = "EXPERT"
+        self.expert_button.append(self._render_config_text(canvas, x, y, text))
+
+        # Selector arrow
+        x = CODE_PADDING
+        self.arrow_location[4] = [x, y]        
 
         # Choose duplicates
         x = CODE_PADDING
@@ -314,6 +348,10 @@ class GameSettings:
                     elif selected in self.hard_button:
                         self.difficulty = 3
                         self._move_arrow(canvas, self.difficulty_arrow, 3)
+
+                    elif selected in self.expert_button:
+                        self.difficulty = 4
+                        self._move_arrow(canvas, self.difficulty_arrow, 4)                        
 
                     elif selected in self.yes_button:
                         self.has_duplicates = True
@@ -526,7 +564,6 @@ def game_over(canvas, truth, is_winner, num_pegs):
     """
     Show appropriate game over message
     """
-    print("GAME OVER!", is_winner)
     padding = 5
     x = 100
     y = 2 * (CODE_PADDING + CODE_SIZE + CODE_PADDING)
@@ -553,7 +590,7 @@ def game_over(canvas, truth, is_winner, num_pegs):
     )   
 
     # Show solution
-    truth_x = num_pegs*CODE_SIZE
+    truth_x = (CANVAS_WIDTH - (num_pegs*(CODE_SIZE+CODE_PADDING)))/2        
     truth_y = y + font_size + padding
     for i in range(num_pegs):
         canvas.create_oval(
@@ -653,9 +690,10 @@ def display_difficulty(canvas, difficulty):
         text += "MEDIUM"
     elif difficulty == 3:
         text += "HARD"
+    elif difficulty == 4:
+        text += "EXPERT"        
     else:
         text += "EASY"
-
     draw_info_text(canvas, x, y, text)
 
 def display_info(canvas, has_duplicates):
@@ -712,6 +750,7 @@ def play_mastermind(canvas, difficulty, has_duplicates):
     - EASY = 12 tries, 6 colors
     - MEDIUM = 10 tries, 7 colors
     - HARD = 8 tries, 9 colors
+    - EXPERT = 6 code sequence, 10 tries, 9 colors
     """
     # Update the configuration
     max_guesses = MAX_GUESSES
@@ -725,6 +764,11 @@ def play_mastermind(canvas, difficulty, has_duplicates):
         # Hard mode
         max_guesses = MAX_GUESSES - 4
         colors = COLORS + HARD_COLORS 
+    elif difficulty == 4:
+        # Expert mode
+        num_pegs = 6
+        max_guesses = MAX_GUESSES
+        colors = COLORS + HARD_COLORS         
 
     # Create the code
     if has_duplicates:
