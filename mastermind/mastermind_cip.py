@@ -119,7 +119,7 @@ class GameSettings:
         )    
         x = CODE_PADDING + 2*CODE_SIZE + CODE_PADDING
         text = "MEDIUM"
-        self.easy_button.append(self._render_config_text(canvas, x, y, text))    
+        self.medium_button.append(self._render_config_text(canvas, x, y, text))    
 
         # Selector arrow
         x = CODE_PADDING
