@@ -26,16 +26,24 @@ Design:
 - food cannot appear where snake is located
 - high score, current score, lives
 
+Extensions
+- 2 player
+
 """
 SIZE = 15
 CANVAS_WIDTH = SIZE * 25
-CANVAS_HEIGHT = SIZE * 25
+PLAY_HEIGHT = SIZE * 25
+CANVAS_HEIGHT = PLAY_HEIGHT + 40
 
 START_LENGTH = 5
 START_DIRECTION = 'right'
 
 BG_COLOR = 'white'
 FILL_COLOR = 'black'
+FADE_COLOR = 'grey'
+
+MAX_TURNS = 5
+SCORE_MULTIPLE = 10
 
 # if you make this larger, the game will go slower
 DELAY = 0.1
@@ -48,7 +56,14 @@ class Food:
         self.food = None
 
     def _get_random_location(self):
-        return SIZE * random.randint(0, CANVAS_WIDTH//SIZE-1), SIZE * random.randint(0, CANVAS_HEIGHT//SIZE-1)
+        """
+        Get a random x,y location on the canvas but not right against the walls
+        """
+        x = max(SIZE * random.randint(0, CANVAS_WIDTH//SIZE-1), SIZE)
+        x = min(CANVAS_WIDTH-SIZE*2, x)
+        y = max(SIZE * random.randint(0, PLAY_HEIGHT//SIZE-1), SIZE)
+        y = min(PLAY_HEIGHT-SIZE*2, y)
+        return x, y 
 
     def render(self, canvas):
         """
@@ -80,9 +95,9 @@ class Snake:
         self.snake = []
 
     def render(self, canvas):
-        # Start in random location on the left half of the screen
-        x = max(self.length*SIZE, SIZE * (random.randint(0, CANVAS_WIDTH//SIZE-1)))
-        y = SIZE * random.randint(0, CANVAS_HEIGHT//SIZE-1)
+        # Start in y location on the left half of the screen
+        x = self.length*SIZE + SIZE
+        y = SIZE * random.randint(0, PLAY_HEIGHT//SIZE-1)
         for i in range(self.length):
             self.snake.append(
                 canvas.create_rectangle(
@@ -210,6 +225,7 @@ def check_for_collisions(canvas, snake, food):
     Milestone #4: Detecting collisions
     """
     is_game_over = False
+    scored = False
     snake_x, snake_y = snake.get_coords(canvas)
     # Check for walls
     if snake_x <= 0 or (snake_x+SIZE) >= CANVAS_WIDTH:
@@ -217,7 +233,7 @@ def check_for_collisions(canvas, snake, food):
         is_game_over = True
         return is_game_over
 
-    if snake_y <= 0 or (snake_y+SIZE) >= CANVAS_HEIGHT:
+    if snake_y <= 0 or (snake_y+SIZE) >= PLAY_HEIGHT:
         print("y out of bounds")
         is_game_over = True
         return is_game_over
@@ -239,8 +255,9 @@ def check_for_collisions(canvas, snake, food):
             print("Snake ate food")
             food.render(canvas)
             snake.grow(canvas)
+            scored = True
 
-    return is_game_over
+    return is_game_over, scored
 
 def display_game_over(canvas):
     """
@@ -255,8 +272,9 @@ def display_intro(canvas):
     font_size = 50
     font = 'sans-serif'
     text = "S N A K E"
-    x = (CANVAS_WIDTH-210)//2
-    y = (CANVAS_HEIGHT-2*font_size)//2
+    #x = (CANVAS_WIDTH-210)//2
+    x = (CANVAS_WIDTH-len(text)*font_size/2)//2
+    y = (PLAY_HEIGHT-2*font_size)//2
     
     canvas.create_text(
         x,
@@ -270,6 +288,7 @@ def display_intro(canvas):
     y += 2*font_size
     font_size = 20
     text = "Press any key to start"
+    
     canvas.create_text(
         x,
         y,
@@ -290,18 +309,86 @@ def wait_for_key_press(canvas):
     while not canvas.get_last_key_press():
         time.sleep(DELAY)  
 
+def display_scores(canvas):
+    """
+    Render the score info
+    """
+    score = None
+    high_score = None
+
+    canvas.create_rectangle(
+        0, PLAY_HEIGHT,
+        CANVAS_WIDTH, CANVAS_HEIGHT,
+        FILL_COLOR
+    )
+
+    font_size = 16
+    font = 'sans-serif'
+    text = "Score:"
+
+    padding = 10
+    x = padding
+    y = PLAY_HEIGHT + padding
+    canvas.create_text(
+        x, y, 
+        text = text,
+        font_size = font_size,
+        color = BG_COLOR
+    )
+
+    x = len(text)*font_size//2 + 2*padding
+    text = "0"
+    score = canvas.create_text(
+        x, y, 
+        text = text,
+        font_size = font_size,
+        color = BG_COLOR
+    )
+
+    text = "High Score:"
+    x = CANVAS_WIDTH - len(text)*font_size
+    canvas.create_text(
+        x, y, 
+        text = text,
+        font_size = font_size,
+        color = BG_COLOR
+    )    
+
+    x += len(text)*font_size//2 + 2*padding
+    text = "0"
+    high_score = canvas.create_text(
+        x, y, 
+        text = text,
+        font_size = font_size,
+        color = BG_COLOR
+    )        
+
+    return score, high_score
+
+def update_scores(canvas, score, curr_score, high_score, curr_high_score):
+    """
+    Update the score stats on-screen
+    """
+    canvas.change_text(score, str(curr_score))
+    canvas.change_text(high_score, str(curr_high_score))
+
+
 def main():
     direction = START_DIRECTION
     is_game_over = False
 
     canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
 
+    current_score = 0
+    high_score = 0
+    
     # Splash screen
     display_intro(canvas)
 
+    # Game screen
+    score_obj, high_score_obj = display_scores(canvas)
     snake = Snake(START_LENGTH, direction)
     snake.render(canvas)
-    
     food = Food()
     food.render(canvas)
 
@@ -311,10 +398,18 @@ def main():
         # Move the player
         direction = get_direction(canvas, direction)
         direction = snake.move(canvas, direction)
-        is_game_over = check_for_collisions(canvas, snake, food)
+        is_game_over, scored = check_for_collisions(canvas, snake, food)
+
+        if scored:
+            current_score += SCORE_MULTIPLE
+            if current_score > high_score:
+                high_score = current_score
+            update_scores(canvas, score_obj, current_score, high_score_obj, high_score)         
 
         # sleep
-        time.sleep(DELAY)                
+        time.sleep(DELAY)     
+
+    #display_game_over(canvas)
 
 
 if __name__ == '__main__':
