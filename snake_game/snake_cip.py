@@ -26,14 +26,15 @@ Design:
 - food cannot appear where snake is located
 
 """
-    
-CANVAS_WIDTH = 400
-CANVAS_HEIGHT = 400
 SIZE = 15
+CANVAS_WIDTH = SIZE * 25
+CANVAS_HEIGHT = SIZE * 25
+
+START_LENGTH = 5
+START_DIRECTION = 'right'
 
 BG_COLOR = 'white'
 FILL_COLOR = 'black'
-
 
 # if you make this larger, the game will go slower
 DELAY = 0.1
@@ -56,6 +57,10 @@ class Food:
         while canvas.find_overlapping(x, y, x+SIZE, y+SIZE):
             x, y = self._get_random_location()
         
+        # Clear previous food
+        if self.food:
+            canvas.delete(self.food)
+
         self.food = canvas.create_oval(
             x,
             y,
@@ -63,7 +68,6 @@ class Food:
             y+SIZE,
             FILL_COLOR
         )
-        print("food:", x, y)
 
 class Snake:
     """
@@ -76,56 +80,57 @@ class Snake:
 
     def render(self, canvas):
         # Start in random location on the left half of the screen
-        x = random.randint(0, CANVAS_WIDTH/2)
-        y = random.randint(0, CANVAS_HEIGHT-SIZE)
-        print(x, y)
+        x = max(self.length*SIZE, SIZE * (random.randint(0, CANVAS_WIDTH//SIZE-1)))
+        y = SIZE * random.randint(0, CANVAS_HEIGHT//SIZE-1)
         for i in range(self.length):
             self.snake.append(
                 canvas.create_rectangle(
-                    x + i*(SIZE),
+                    x - i*(SIZE) - SIZE,                    
                     y,
-                    x + i*(SIZE) + SIZE,
+                    x - i*(SIZE),
                     y + SIZE,
                     FILL_COLOR
                 )
             )
 
-    def move(self, canvas, x_offset, y_offset, direction):
+    def move(self, canvas, new_direction):
         """
-        Move the snake to the provided x, y offset
+        Move the snake by one step
         """
-        collision = False
         head = self.snake[0]
         head_x = canvas.get_left_x(head)
         head_y = canvas.get_top_y(head)
 
-        # If snake one unit long, just move it
+        x_offset, y_offset = self._get_offset(new_direction)
+
+        # If snake is one unit long, can just move one step
         if len(self.snake) == 1:
             canvas.move(self.snake[0], x_offset, y_offset)
-            return collision
+            self.direction = new_direction
+            return self.direction
 
-        # TODO: what if tail move out of the way in time?
+        move_x = head_x + x_offset
+        move_y = head_y + y_offset
+        second_x = canvas.get_left_x(self.snake[1])
+        second_y = canvas.get_top_y(self.snake[1])
 
-        # Move the head
-        overlapping_list = canvas.find_overlapping(
-            x_offset, y_offset, x_offset+SIZE, y_offset+SIZE)
-        if self.snake[1] not in overlapping_list:
-            # Move the tail to the new head
-            tail = self.snake.pop()
-            self.snake.insert(0, tail)
-            canvas.moveto(
-                tail,
-                head_x + x_offset,
-                head_y + y_offset
-            )
-            # Update the current direction
-            self.direction = direction
-
+        if move_x == second_x and move_y == second_y:
+            # Moving into itself, ignore new direction
+            # For example: Snake moving up and new direction is down
+            x_offset, y_offset = self._get_offset(self.direction)
         else:
-            # Direction does not change
-            pass
+            # Update the current direction
+            self.direction = new_direction
 
-        return collision
+        # Move the tail to the new head
+        tail = self.snake.pop()
+        canvas.moveto(
+            tail,
+            head_x + x_offset,
+            head_y + y_offset
+        )
+        self.snake.insert(0, tail)        
+        return self.direction
 
     def grow(self, canvas):
         # Grow the snake by one
@@ -137,7 +142,7 @@ class Snake:
         if self.direction == 'left':
             tail_x += SIZE
         elif self.direction == 'right':
-            tail_x -+ SIZE
+            tail_x -= SIZE
         elif self.direction == 'up':
             tail_y += SIZE
         elif self.direction == 'down':
@@ -152,6 +157,32 @@ class Snake:
                 FILL_COLOR
             )
         )
+        
+    def get_coords(self, canvas):
+        """
+        Return the x, y location of the head of the snake
+        """
+        return canvas.get_left_x(self.snake[0]), canvas.get_top_y(self.snake[0])
+
+    def _get_offset(self, direction):
+        """
+        Get the x and y offset based on direction
+        """
+        move_x = 0
+        move_y = 0
+        if direction == 'left':
+            move_x = -SIZE
+            move_y = 0
+        elif direction == 'right':
+            move_x = SIZE
+            move_y = 0
+        elif direction == 'up':
+            move_x = 0
+            move_y = -SIZE
+        elif direction == 'down':
+            move_x = 0
+            move_y = SIZE
+        return move_x, move_y
 
 
 def get_direction(canvas, direction):
@@ -173,38 +204,62 @@ def get_direction(canvas, direction):
         direction = 'down'
     return direction
 
-def main():
-    canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-    
-    snake = Snake(15, 'right')
-    snake.render(canvas)
+def check_for_collisions(canvas, snake, food):
+    """
+    Milestone #4: Detecting collisions
+    """
+    is_game_over = False
+    snake_x, snake_y = snake.get_coords(canvas)
+    # Check for walls
+    if snake_x <= 0 or (snake_x+SIZE) >= CANVAS_WIDTH:
+        print("x out of bounds")
+        is_game_over = True
+        return is_game_over
 
+    if snake_y <= 0 or (snake_y+SIZE) >= CANVAS_HEIGHT:
+        print("y out of bounds")
+        is_game_over = True
+        return is_game_over
+
+    # Check for snake running into food or itself
+    overlapping_list = canvas.find_overlapping(
+        snake_x, snake_y, snake_x+SIZE, snake_y+SIZE)
+    for overlapping in overlapping_list:
+        if overlapping == snake.snake[0] or (snake.snake[1] and overlapping == snake.snake[1]):
+            # Ignore the head section
+            pass
+        elif overlapping in snake.snake:
+            # Ran into itself
+            print("Snake ran into itself")
+            is_game_over = True
+            return is_game_over
+        elif overlapping == food.food:
+            # Ran into food
+            print("Snake ate food")
+            food.render(canvas)
+            snake.grow(canvas)
+
+    return is_game_over
+
+def main():
+    direction = START_DIRECTION
+    is_game_over = False
+
+    canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    snake = Snake(START_LENGTH, direction)
+    snake.render(canvas)
+    
     food = Food()
     food.render(canvas)
 
-    direction = 'right'     # left, right, up or down
-    move_x = SIZE
-    move_y = 0
-
     # Animation loop
-    while True:
+    while not is_game_over:
 
         # Move the player
         direction = get_direction(canvas, direction)
-        if direction == 'left':
-            move_x = -SIZE
-            move_y = 0
-        if direction == 'right':
-            move_x = SIZE
-            move_y = 0
-        if direction == 'up':
-            move_x = 0
-            move_y = -SIZE
-        if direction == 'down':
-            move_x = 0
-            move_y = SIZE
-        collision = snake.move(canvas, move_x, move_y, direction)
-        snake.grow(canvas)
+        direction = snake.move(canvas, direction)
+        is_game_over = check_for_collisions(canvas, snake, food)
 
         # sleep
         time.sleep(DELAY)                
