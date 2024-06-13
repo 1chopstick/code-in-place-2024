@@ -24,6 +24,7 @@ Design:
 - track points
 - track time
 - food cannot appear where snake is located
+- high score, current score, lives
 
 """
 SIZE = 15
@@ -241,11 +242,62 @@ def check_for_collisions(canvas, snake, food):
 
     return is_game_over
 
+def display_game_over(canvas):
+    """
+    Show game over message
+    """
+    pass
+
+def display_intro(canvas):
+    """
+    Show intro splash screen
+    """
+    font_size = 50
+    font = 'sans-serif'
+    text = "S N A K E"
+    x = (CANVAS_WIDTH-210)//2
+    y = (CANVAS_HEIGHT-2*font_size)//2
+    
+    canvas.create_text(
+        x,
+        y,
+        text, 
+        font_size = font_size,
+        font = font,
+        color = FILL_COLOR
+    )
+
+    y += 2*font_size
+    font_size = 20
+    text = "Press any key to start"
+    canvas.create_text(
+        x,
+        y,
+        text, 
+        font_size = font_size,
+        font = font,
+        color = FILL_COLOR
+    )    
+
+    # Wait for keypress
+    wait_for_key_press(canvas)    
+    canvas.clear()
+
+def wait_for_key_press(canvas):
+    """
+    Sleep until any key is pressed
+    """
+    while not canvas.get_last_key_press():
+        time.sleep(DELAY)  
+
 def main():
     direction = START_DIRECTION
     is_game_over = False
 
     canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    # Splash screen
+    display_intro(canvas)
 
     snake = Snake(START_LENGTH, direction)
     snake.render(canvas)
