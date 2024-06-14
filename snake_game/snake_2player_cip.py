@@ -148,12 +148,12 @@ class Snake:
         snake_x, snake_y = self.get_coords(canvas)
         
         # Check for walls
-        if snake_x <= 0 or (snake_x+SIZE) >= CANVAS_WIDTH:
+        if snake_x < 0 or (snake_x+SIZE) > CANVAS_WIDTH:
             print(self.name, "x out of bounds")
             has_collision = True
             return has_collision
 
-        if snake_y <= 0 or (snake_y+SIZE) >= PLAY_HEIGHT:
+        if snake_y < 0 or (snake_y+SIZE) > PLAY_HEIGHT:
             print(self.name, "y out of bounds")
             has_collision = True
             return has_collision
