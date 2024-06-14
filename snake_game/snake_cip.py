@@ -31,8 +31,8 @@ Extensions
 
 """
 SIZE = 15
-CANVAS_WIDTH = SIZE * 25
-PLAY_HEIGHT = SIZE * 25
+CANVAS_WIDTH = SIZE * 30
+PLAY_HEIGHT = SIZE * 30
 CANVAS_HEIGHT = PLAY_HEIGHT + 35
 
 START_LENGTH = 5
@@ -280,7 +280,7 @@ def display_game_over(canvas):
     font_size = 50
     font = 'sans-serif'
     text = "GAME OVER" 
-    x = 40
+    x = (CANVAS_WIDTH-len(text)*font_size/2)//2 - font_size
     y = (PLAY_HEIGHT-2*font_size)//2
 
     canvas.create_text(
