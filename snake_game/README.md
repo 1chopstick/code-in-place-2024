@@ -11,4 +11,4 @@ Play it [here](https://codeinplace.stanford.edu/cip4/share/YMHRlAblA6sEdeU4xXsC)
 
 ## Two-Players Snake
 
-TODO
+Play it [here](https://codeinplace.stanford.edu/cip4/share/rcTCSDFBStIwdYgSuN8s)
