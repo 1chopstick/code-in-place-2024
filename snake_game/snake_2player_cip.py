@@ -15,8 +15,10 @@ CANVAS_HEIGHT = PLAY_HEIGHT + 35
 
 FILL_COLOR = 'white'
 BG_COLOR = 'black'
-P1_COLOR = 'red'
-P2_COLOR = 'blue'
+P1_COLOR = '#D0312D'        # Red
+P1_FADE_COLOR = '#FFCCCB'
+P2_COLOR = '#3944BC'        # Blue
+P2_FADE_COLOR = '#ADD8E6'
 FADE_COLOR = '#BDBDBD'
 
 P1_KEY_MAP = {
@@ -48,10 +50,11 @@ class Snake:
     """
     The snake
     """
-    def __init__(self, color, name='', direction='R', key_map={}):
+    def __init__(self, color, fade_color, name='', direction='R', key_map={}):
         self.direction = direction
         self.name = name
         self.color = color
+        self.fade_color = fade_color
         self.key_map = key_map
         self.snake = []             # Store snake inverse; head is end of list
 
@@ -76,6 +79,13 @@ class Snake:
                 self.color
             )
         )
+
+    def fade(self, canvas):
+        """
+        Fade out the color
+        """
+        for shape in self.snake:
+            canvas.set_color(shape, self.fade_color)
 
     def _get_new_location(self, canvas, direction):
         """
@@ -104,7 +114,6 @@ class Snake:
         for key in reversed(keys):
             if key in self.key_map.keys():
                 direction = self.key_map[key]
-                print("[move]", self.name, "new", direction, "old", self.direction)
 
                 # Is direction valid?
                 new_x, new_y = self._get_new_location(canvas, direction)
@@ -137,9 +146,7 @@ class Snake:
         """
         has_collision = False
         snake_x, snake_y = self.get_coords(canvas)
-
-        print("[check]", self.name, self.direction, snake_x, snake_y)
-
+        
         # Check for walls
         if snake_x <= 0 or (snake_x+SIZE) >= CANVAS_WIDTH:
             print(self.name, "x out of bounds")
@@ -173,7 +180,7 @@ class Snake:
         """
         return canvas.get_left_x(self.snake[-1]), canvas.get_top_y(self.snake[-1])
 
-def _add_intro_text(canvas, x, y, text, font_size):
+def _add_intro_text(canvas, x, y, text, font_size, color=FILL_COLOR):
     """
     Add text to introduction splash page
     """
@@ -184,7 +191,7 @@ def _add_intro_text(canvas, x, y, text, font_size):
         text, 
         font_size = font_size,
         font = font,
-        color = FILL_COLOR
+        color = color
     )   
 
 def display_intro(canvas):
@@ -210,7 +217,7 @@ def display_intro(canvas):
     font_size = 20
     padding = 10
     text = "Player 1"
-    _add_intro_text(canvas, x, y, text, font_size)
+    _add_intro_text(canvas, x, y, text, font_size, P1_COLOR)
 
     # UP
     x = 25
@@ -275,7 +282,7 @@ def display_intro(canvas):
     text = "Player 2"
     y = p2_y
     x = 250
-    _add_intro_text(canvas, x, y, text, font_size)
+    _add_intro_text(canvas, x, y, text, font_size, P2_COLOR)
 
     # UP
     x = 250
@@ -441,11 +448,11 @@ def play_snake(canvas, ignore_list):
     winner = None
 
     # Create player 1
-    player_1 = Snake(P1_COLOR, 'Player 1', 'R', P1_KEY_MAP)
+    player_1 = Snake(P1_COLOR, P1_FADE_COLOR, 'Player 1', 'R', P1_KEY_MAP)
     player_1.render(canvas)
 
     # Create player 2
-    player_2 = Snake(P2_COLOR, 'Player 2', 'L', P2_KEY_MAP)
+    player_2 = Snake(P2_COLOR, P2_FADE_COLOR, 'Player 2', 'L', P2_KEY_MAP)
     player_2.render(canvas)
 
     # Animation loop:
@@ -460,23 +467,22 @@ def play_snake(canvas, ignore_list):
         
         if p1_game_over and p2_game_over:
             # Tie
-            print("TIE!")
             winner = None
             is_game_over = True
         elif p1_game_over:
             # Player 1 lost
             winner = 2
-            print("Player 1 LOST")
             is_game_over = True
         elif p2_game_over:
             # Player 2 list
             winner = 1
-            print("Player 2 LOST")
             is_game_over = True
 
         # sleep
         time.sleep(DELAY)
 
+    player_1.fade(canvas)
+    player_2.fade(canvas)
     return winner
 
 def main():
