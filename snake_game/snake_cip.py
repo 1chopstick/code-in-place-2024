@@ -33,20 +33,21 @@ Extensions
 SIZE = 15
 CANVAS_WIDTH = SIZE * 25
 PLAY_HEIGHT = SIZE * 25
-CANVAS_HEIGHT = PLAY_HEIGHT + 40
+CANVAS_HEIGHT = PLAY_HEIGHT + 35
 
 START_LENGTH = 5
 START_DIRECTION = 'right'
 
 BG_COLOR = 'white'
 FILL_COLOR = 'black'
-FADE_COLOR = 'grey'
+FADE_COLOR = '#BDBDBD'
 
 MAX_TURNS = 5
 SCORE_MULTIPLE = 10
 
 # if you make this larger, the game will go slower
-DELAY = 0.1
+DELAY = 0.2
+DELAY_INCREASE = 0.95
 
 class Food:
     """
@@ -84,6 +85,12 @@ class Food:
             y+SIZE,
             FILL_COLOR
         )
+
+    def fade(self, canvas):
+        """
+        Fade out the food
+        """
+        canvas.set_color(self.food, FADE_COLOR)
 
 class Snake:
     """
@@ -173,6 +180,13 @@ class Snake:
                 FILL_COLOR
             )
         )
+
+    def fade(self, canvas):
+        """
+        Fade out the snake
+        """
+        for snake in self.snake:
+            canvas.set_color(snake, FADE_COLOR)
         
     def get_coords(self, canvas):
         """
@@ -231,12 +245,12 @@ def check_for_collisions(canvas, snake, food):
     if snake_x <= 0 or (snake_x+SIZE) >= CANVAS_WIDTH:
         print("x out of bounds")
         is_game_over = True
-        return is_game_over
+        return is_game_over, scored
 
     if snake_y <= 0 or (snake_y+SIZE) >= PLAY_HEIGHT:
         print("y out of bounds")
         is_game_over = True
-        return is_game_over
+        return is_game_over, scored
 
     # Check for snake running into food or itself
     overlapping_list = canvas.find_overlapping(
@@ -249,7 +263,7 @@ def check_for_collisions(canvas, snake, food):
             # Ran into itself
             print("Snake ran into itself")
             is_game_over = True
-            return is_game_over
+            return is_game_over, scored
         elif overlapping == food.food:
             # Ran into food
             print("Snake ate food")
@@ -263,7 +277,37 @@ def display_game_over(canvas):
     """
     Show game over message
     """
-    pass
+    font_size = 50
+    font = 'sans-serif'
+    text = "GAME OVER" 
+    x = 40
+    y = (PLAY_HEIGHT-2*font_size)//2
+
+    canvas.create_text(
+        x,
+        y,
+        text, 
+        font_size = font_size,
+        font = font,
+        color = FILL_COLOR
+    )
+
+    y += 2*font_size
+    font_size = 20
+    text = "Press [SPACE] to try again"
+    
+    canvas.create_text(
+        x,
+        y,
+        text, 
+        font_size = font_size,
+        font = font,
+        color = FILL_COLOR
+    )        
+
+    # Wait for keypress
+    wait_for_key_press(canvas)    
+    canvas.clear()    
 
 def display_intro(canvas):
     """
@@ -287,7 +331,7 @@ def display_intro(canvas):
 
     y += 2*font_size
     font_size = 20
-    text = "Press any key to start"
+    text = "Press [SPACE] to start"
     
     canvas.create_text(
         x,
@@ -306,10 +350,12 @@ def wait_for_key_press(canvas):
     """
     Sleep until any key is pressed
     """
-    while not canvas.get_last_key_press():
-        time.sleep(DELAY)  
+    key = canvas.get_last_key_press()
+    while not key or key[0] != ' ':
+        key = canvas.get_last_key_press()
+        time.sleep(DELAY) 
 
-def display_scores(canvas):
+def display_scores(canvas, curr_high_score):
     """
     Render the score info
     """
@@ -355,14 +401,13 @@ def display_scores(canvas):
     )    
 
     x += len(text)*font_size//2 + 2*padding
-    text = "0"
+    text = str(curr_high_score)
     high_score = canvas.create_text(
         x, y, 
         text = text,
         font_size = font_size,
         color = BG_COLOR
     )        
-
     return score, high_score
 
 def update_scores(canvas, score, curr_score, high_score, curr_high_score):
@@ -372,21 +417,14 @@ def update_scores(canvas, score, curr_score, high_score, curr_high_score):
     canvas.change_text(score, str(curr_score))
     canvas.change_text(high_score, str(curr_high_score))
 
-
-def main():
+def play_snake(canvas, score, high_score, curr_high_score):
+    """
+    Play the game of snake
+    """
     direction = START_DIRECTION
+    delay = DELAY
     is_game_over = False
-
-    canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-
     current_score = 0
-    high_score = 0
-    
-    # Splash screen
-    display_intro(canvas)
-
-    # Game screen
-    score_obj, high_score_obj = display_scores(canvas)
     snake = Snake(START_LENGTH, direction)
     snake.render(canvas)
     food = Food()
@@ -402,14 +440,39 @@ def main():
 
         if scored:
             current_score += SCORE_MULTIPLE
-            if current_score > high_score:
-                high_score = current_score
-            update_scores(canvas, score_obj, current_score, high_score_obj, high_score)         
+            if current_score > curr_high_score:
+                curr_high_score = current_score
+            update_scores(canvas, score, current_score, high_score, curr_high_score)
 
+            # Increase the speed
+            delay *= DELAY_INCREASE
+     
         # sleep
-        time.sleep(DELAY)     
+        time.sleep(delay)
 
-    #display_game_over(canvas)
+    # Grey out the game pieces
+    snake.fade(canvas)
+    food.fade(canvas)
+
+    return curr_high_score
+
+def main():
+    canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+    
+    high_score = 0
+    
+    # Splash screen
+    display_intro(canvas)
+
+    while True:
+        # Game screen
+        score_obj, high_score_obj = display_scores(canvas, high_score)
+
+        # Play the game
+        high_score = play_snake(canvas, score_obj, high_score_obj, high_score)
+
+        # Display game over
+        display_game_over(canvas)
 
 
 if __name__ == '__main__':
