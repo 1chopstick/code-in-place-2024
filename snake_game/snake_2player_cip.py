@@ -19,7 +19,7 @@ P1_COLOR = '#D0312D'        # Red
 P1_FADE_COLOR = '#FFCCCB'
 P2_COLOR = '#3944BC'        # Blue
 P2_FADE_COLOR = '#ADD8E6'
-FADE_COLOR = '#BDBDBD'
+FADE_COLOR = 'grey'
 
 P1_KEY_MAP = {
     'w':'U',
@@ -185,7 +185,7 @@ def _add_intro_text(canvas, x, y, text, font_size, color=FILL_COLOR):
     Add text to introduction splash page
     """
     font = 'sans-serif'    
-    canvas.create_text(
+    return canvas.create_text(
         x,
         y,
         text, 
@@ -222,9 +222,12 @@ def display_intro(canvas):
     text = "TWO PLAYERS"
     _add_intro_text(canvas, x, y, text, font_size)
 
-    y += font_size
+    y += font_size + 5
     font_size = 50
+    shadow_offset = 3
     text = "S N A K E"
+    _add_intro_text(canvas, x-shadow_offset, y-shadow_offset, text, font_size, P1_COLOR)
+    _add_intro_text(canvas, x+shadow_offset, y+shadow_offset, text, font_size, P2_COLOR)
     _add_intro_text(canvas, x, y, text, font_size)
 
     # Player 1 Info
@@ -465,6 +468,7 @@ def main():
     
     # Splash screen
     display_intro(canvas)
+
 
     # Play game
     is_game_over = False
