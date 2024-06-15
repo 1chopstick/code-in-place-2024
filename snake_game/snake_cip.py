@@ -27,9 +27,11 @@ Design:
 - high score, current score, lives
 
 Extensions
-- 2 player
+- 2 players version
 
 """
+
+# Constants
 SIZE = 15
 CANVAS_WIDTH = SIZE * 30
 PLAY_HEIGHT = SIZE * 30
@@ -48,6 +50,9 @@ SCORE_MULTIPLE = 10
 # if you make this larger, the game will go slower
 DELAY = 0.2
 DELAY_INCREASE = 0.95
+
+# Global
+_is_cip = False
 
 class Food:
     """
@@ -86,11 +91,18 @@ class Food:
             FILL_COLOR
         )
 
+        # Update canvas
+        update_canvas(canvas)
+
+
     def fade(self, canvas):
         """
         Fade out the food
         """
         canvas.set_color(self.food, FADE_COLOR)
+        
+        # Update canvas
+        update_canvas(canvas)        
 
 class Snake:
     """
@@ -115,6 +127,9 @@ class Snake:
                     FILL_COLOR
                 )
             )
+
+        # Update canvas
+        update_canvas(canvas)
 
     def move(self, canvas, new_direction):
         """
@@ -152,7 +167,11 @@ class Snake:
             head_x + x_offset,
             head_y + y_offset
         )
-        self.snake.insert(0, tail)        
+        self.snake.insert(0, tail)
+        
+        # Update canvas
+        update_canvas(canvas)        
+
         return self.direction
 
     def grow(self, canvas):
@@ -181,12 +200,18 @@ class Snake:
             )
         )
 
+        # Update canvas
+        update_canvas(canvas)        
+
     def fade(self, canvas):
         """
         Fade out the snake
         """
         for snake in self.snake:
             canvas.set_color(snake, FADE_COLOR)
+
+        # Update canvas
+        update_canvas(canvas)            
         
     def get_coords(self, canvas):
         """
@@ -213,7 +238,6 @@ class Snake:
             move_x = 0
             move_y = SIZE
         return move_x, move_y
-
 
 def get_direction(canvas, direction):
     """
@@ -303,7 +327,10 @@ def display_game_over(canvas):
         font_size = font_size,
         font = font,
         color = FILL_COLOR
-    )        
+    )
+
+    # Update canvas
+    update_canvas(canvas)    
 
     # Wait for keypress
     wait_for_key_press(canvas)    
@@ -316,9 +343,19 @@ def display_intro(canvas):
     font_size = 50
     font = 'sans-serif'
     text = "S N A K E"
+    shadow_offset = 3
     #x = (CANVAS_WIDTH-210)//2
     x = (CANVAS_WIDTH-len(text)*font_size/2)//2
     y = (PLAY_HEIGHT-2*font_size)//2
+
+    canvas.create_text(
+        x+shadow_offset,
+        y+shadow_offset,
+        text, 
+        font_size = font_size,
+        font = font,
+        color = FADE_COLOR
+    )    
     
     canvas.create_text(
         x,
@@ -341,6 +378,9 @@ def display_intro(canvas):
         font = font,
         color = FILL_COLOR
     )    
+
+    # Update canvas
+    update_canvas(canvas)    
 
     # Wait for keypress
     wait_for_key_press(canvas)    
@@ -407,7 +447,11 @@ def display_scores(canvas, curr_high_score):
         text = text,
         font_size = font_size,
         color = BG_COLOR
-    )        
+    )     
+
+    # Update canvas
+    update_canvas(canvas)
+
     return score, high_score
 
 def update_scores(canvas, score, curr_score, high_score, curr_high_score):
@@ -416,6 +460,9 @@ def update_scores(canvas, score, curr_score, high_score, curr_high_score):
     """
     canvas.change_text(score, str(curr_score))
     canvas.change_text(high_score, str(curr_high_score))
+
+    # Update canvas
+    update_canvas(canvas)    
 
 def play_snake(canvas, score, high_score, curr_high_score):
     """
@@ -447,7 +494,10 @@ def play_snake(canvas, score, high_score, curr_high_score):
             # Increase the speed
             delay *= DELAY_INCREASE
      
-        # sleep
+        # Update canvas
+        update_canvas(canvas)
+
+        # Sleep
         time.sleep(delay)
 
     # Grey out the game pieces
@@ -456,8 +506,20 @@ def play_snake(canvas, score, high_score, curr_high_score):
 
     return curr_high_score
 
+def update_canvas(canvas):
+    """
+    Call update canvas for non-CIP IDE
+    """
+    global _is_cip
+    if not _is_cip:
+        canvas.update()
+
 def main():
     canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    if hasattr(canvas, 'canvas'):
+        global _is_cip
+        _is_cip = True
     
     high_score = 0
     
@@ -474,6 +536,9 @@ def main():
         # Display game over
         display_game_over(canvas)
 
+    # wait for the user to close the window
+    if not _is_cip:
+        canvas.mainloop()            
 
 if __name__ == '__main__':
     main()
