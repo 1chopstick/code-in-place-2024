@@ -64,12 +64,12 @@ class Snake:
         """
         # Check starting direction
         if self.direction == 'R':
-            #  Start on left side of screen
+            #  Start on left side of screen heading right
             x = max(SIZE, SIZE * random.randint(0, CANVAS_WIDTH//2//SIZE))
         else:
-            # Start on right side of the screen 
+            # Start on right side of the screen heading left
             x = min(CANVAS_WIDTH-2*SIZE, CANVAS_WIDTH - SIZE * random.randint(0, CANVAS_WIDTH//2//SIZE))
-        y = SIZE * random.randint(0, PLAY_HEIGHT//SIZE-1)
+        y = min(PLAY_HEIGHT-SIZE, SIZE * random.randint(0, PLAY_HEIGHT//SIZE))
         self.snake.append(
             canvas.create_rectangle(
                 x,
@@ -194,6 +194,22 @@ def _add_intro_text(canvas, x, y, text, font_size, color=FILL_COLOR):
         color = color
     )   
 
+def _add_intro_arrows(canvas, x, y, size, direction, color=FILL_COLOR):
+    """
+    Draw arrow direction icons
+    """
+    coords_dict = {
+        'U':[x + size/2, y, x, y+size, x+size, y+size],
+        'D':[x, y, x + size, y, x+size/2, y+size],
+        'L':[x+size, y+size, x+size, y, x, y+size/2],
+        'R':[x, y, x+size, y+size/2, x, y+size]
+    }
+    coords = coords_dict[direction]
+    canvas.create_polygon(
+        *coords,
+        color=FILL_COLOR
+    )
+
 def display_intro(canvas):
     """
     Show intro splash screen
@@ -222,12 +238,7 @@ def display_intro(canvas):
     # UP
     x = 25
     y += font_size + padding
-    canvas.create_polygon(
-        x + font_size/2, y,
-        x, y+font_size,
-        x+font_size, y+font_size,
-        color=FILL_COLOR
-    )
+    _add_intro_arrows(canvas, x, y, font_size, 'U')
     x += 4*padding
     text = "[W] key"
     _add_intro_text(canvas, x, y, text, font_size)
@@ -235,12 +246,7 @@ def display_intro(canvas):
     # DOWN
     x = 25
     y += font_size + padding
-    canvas.create_polygon(
-        x, y,
-        x + font_size, y,
-        x+font_size/2, y+font_size,
-        color=FILL_COLOR
-    )    
+    _add_intro_arrows(canvas, x, y, font_size, 'D')
     x += 4*padding
     text = "[S] key"
     _add_intro_text(canvas, x, y, text, font_size)
@@ -248,12 +254,7 @@ def display_intro(canvas):
     # LEFT
     x = 25
     y += font_size + padding
-    canvas.create_polygon(
-        x+font_size, y+font_size,
-        x+font_size, y,
-        x, y+font_size/2,
-        color=FILL_COLOR
-    )    
+    _add_intro_arrows(canvas, x, y, font_size, 'L')
     x += 4*padding
     text = "[A] key"
     _add_intro_text(canvas, x, y, text, font_size)
@@ -261,12 +262,7 @@ def display_intro(canvas):
     # RIGHT
     x = 25
     y += font_size + padding
-    canvas.create_polygon(
-        x, y,
-        x+font_size, y+font_size/2,
-        x, y+font_size,
-        color=FILL_COLOR
-    )    
+    _add_intro_arrows(canvas, x, y, font_size, 'R')
     x += 4*padding
     text = "[D] key"
     _add_intro_text(canvas, x, y, text, font_size)
@@ -287,12 +283,7 @@ def display_intro(canvas):
     # UP
     x = 250
     y += font_size + padding
-    canvas.create_polygon(
-        x + font_size/2, y,
-        x, y+font_size,
-        x+font_size, y+font_size,
-        color=FILL_COLOR
-    )
+    _add_intro_arrows(canvas, x, y, font_size, 'U')
     x += 4*padding
     text = "[UP] key"
     _add_intro_text(canvas, x, y, text, font_size)
@@ -300,12 +291,7 @@ def display_intro(canvas):
     # DOWN
     x = 250
     y += font_size + padding
-    canvas.create_polygon(
-        x, y,
-        x + font_size, y,
-        x+font_size/2, y+font_size,
-        color=FILL_COLOR
-    )    
+    _add_intro_arrows(canvas, x, y, font_size, 'D')
     x += 4*padding
     text = "[DOWN] key"
     _add_intro_text(canvas, x, y, text, font_size)
@@ -313,12 +299,7 @@ def display_intro(canvas):
     # LEFT
     x = 250
     y += font_size + padding
-    canvas.create_polygon(
-        x+font_size, y+font_size,
-        x+font_size, y,
-        x, y+font_size/2,
-        color=FILL_COLOR
-    )    
+    _add_intro_arrows(canvas, x, y, font_size, 'L')    
     x += 4*padding
     text = "[LEFT] key"
     _add_intro_text(canvas, x, y, text, font_size)
@@ -326,17 +307,11 @@ def display_intro(canvas):
     # RIGHT
     x = 250
     y += font_size + padding
-    canvas.create_polygon(
-        x, y,
-        x+font_size, y+font_size/2,
-        x, y+font_size,
-        color=FILL_COLOR
-    )    
+    _add_intro_arrows(canvas, x, y, font_size, 'R')  
     x += 4*padding
     text = "[RIGHT] key"
     _add_intro_text(canvas, x, y, text, font_size)
 
-        
     # Wait for keypress
     wait_for_key_press(canvas)    
     canvas.clear()
