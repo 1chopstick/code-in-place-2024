@@ -640,7 +640,7 @@ def display_header(canvas):
     """
     Render the heading
     """
-    font_size = CODE_SIZE+15
+    font_size = CODE_SIZE+10
     font = 'sans-serif'
     text = 'MASTERMIND'
     shadow_offset = 3
