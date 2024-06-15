@@ -483,7 +483,7 @@ class Guess:
         """
         Show the 'Check' button
         """
-        self._render_button(canvas)        
+        self._render_button(canvas)
 
     def set_guess(self, canvas, code, color):
         """
@@ -640,11 +640,19 @@ def display_header(canvas):
     """
     Render the heading
     """
-    font_size = CODE_SIZE
+    font_size = CODE_SIZE+15
     font = 'sans-serif'
     text = 'MASTERMIND'
+    shadow_offset = 3
     x = CODE_PADDING
     y = CODE_PADDING
+    canvas.create_text(
+        CODE_PADDING+shadow_offset,
+        CODE_PADDING+shadow_offset,
+        text=text,
+        font=font,
+        font_size = font_size,
+        color='#BDBDBD')         
     canvas.create_text(
         CODE_PADDING,
         CODE_PADDING,
@@ -770,7 +778,6 @@ def play_mastermind(canvas, difficulty, has_duplicates):
 
     # Play the game
     for i in range(max_guesses):
-
         # Show button for active row
         guesses[i].show_button(canvas)
         is_winner = play_row(canvas, guesses[i], color_picker, truth)
