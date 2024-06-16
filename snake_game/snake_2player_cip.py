@@ -136,8 +136,13 @@ class Snake:
         if not new_x:
             new_x, new_y = self._get_new_location(canvas, self.direction)
 
+        # Check for bottom wall so don't go over
+        bottom_y = new_y+SIZE
+        if self.direction == 'D' and bottom_y >= PLAY_HEIGHT:
+            bottom_y = PLAY_HEIGHT + 0.1
+
         self.snake.append(
-            canvas.create_rectangle(new_x, new_y, new_x+SIZE, new_y+SIZE, self.color)
+            canvas.create_rectangle(new_x, new_y, new_x+SIZE, bottom_y, self.color)
         )
 
     def check_for_collisions(self, canvas, ignore_list):
