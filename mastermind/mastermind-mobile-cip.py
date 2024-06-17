@@ -28,6 +28,9 @@ MEDIUM_COLORS = ['salmon']
 HARD_COLORS = ['salmon', 'brown', 'black']
 EMPTY_FILL_COLOR = 'white'
 OUTLINE_COLOR = 'black'
+LIGHT_GRAY = '#e9e9e9'
+GRAY = '#d4d4d4'
+DARK_GRAY = '#9a9a9a'
 
 CANVAS_WIDTH = 510
 CANVAS_HEIGHT = max(MAX_GUESSES+2, len(COLORS)+len(HARD_COLORS)+2) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
@@ -206,14 +209,36 @@ class GameSettings:
         # Play button
         x = CODE_PADDING
         y += 2*(CODE_SIZE + CODE_PADDING)
+        offset = 4
+        start_width = 150
+        start_height = CODE_PADDING + CODE_PADDING
+        self.start_button.append(
+            canvas.create_polygon(
+                x-offset, y-offset,
+                x + start_width + offset, y-offset,
+                x-offset, y + start_height + offset,
+                color=LIGHT_GRAY,
+                outline=LIGHT_GRAY
+            )
+        )
+        self.start_button.append(
+            canvas.create_polygon(
+                x + start_width + offset, y-offset,
+                x + start_width + offset, y + start_height + offset,
+                x-offset, y + start_height + offset,
+                color=DARK_GRAY,
+                outline=DARK_GRAY
+            )
+        )
+
         self.start_button.append(
             canvas.create_rectangle(
                 x,
                 y,
-                x + 150,
-                y + CODE_PADDING + CODE_PADDING,
-                EMPTY_FILL_COLOR,
-                OUTLINE_COLOR
+                x + start_width,
+                y + start_height,
+                GRAY,
+                GRAY
             )
         )
         padding = 5
@@ -399,7 +424,8 @@ class ColorPicker:
         Clear the selected color
         """
         self.selected_color = None
-        canvas.delete(self.selected_palette)
+        if self.selected_palette:
+            canvas.delete(self.selected_palette)
 
 
 class Guess:
@@ -413,8 +439,7 @@ class Guess:
         self.guesses = ['' for _ in range(num_pegs)]
         self.codes = []
         self.num_pegs = num_pegs
-        self.button = None
-        self.button_label = None
+        self.button = []
 
     def render(self, canvas):
         """
@@ -450,33 +475,68 @@ class Guess:
                 )
                 color_index += 1
 
-    def _render_button(self, canvas):
+    def _render_button(self, canvas, is_on = False):
         """
         Render the check button
         """
-        # Draw the Check button
+        for item in self.button:
+            canvas.delete(item)
+        self.button = []
+
         x = self.left_x + (CODE_SIZE+CODE_PADDING)*self.num_pegs
-        self.button = canvas.create_rectangle(
-            x,
-            self.top_y,
-            x + BUTTON_WIDTH,
-            self.top_y + BUTTON_HEIGHT,
-            EMPTY_FILL_COLOR,
-            OUTLINE_COLOR
+        y = self.top_y
+        offset = 4
+
+        # Draw the button background (top)
+        self.button.append(
+            canvas.create_polygon(
+                x-offset, y-offset,
+                x + BUTTON_WIDTH + offset, y-offset,
+                x-offset, y + BUTTON_HEIGHT + offset,
+                color=LIGHT_GRAY,
+                outline=LIGHT_GRAY
+            )
+        )
+        # Draw the button background (bottom)
+        self.button.append(
+            canvas.create_polygon(
+                x + BUTTON_WIDTH + offset, y-offset,
+                x + BUTTON_WIDTH + offset, y + BUTTON_HEIGHT + offset,
+                x-offset, y + BUTTON_HEIGHT + offset,
+                color=DARK_GRAY,
+                outline=DARK_GRAY
+            )
+        )        
+
+        # Draw the Check button
+        self.button.append(
+            canvas.create_rectangle(
+                x,
+                self.top_y,
+                x + BUTTON_WIDTH,
+                self.top_y + BUTTON_HEIGHT,
+                GRAY,
+                GRAY
+            )
         )
 
         # Draw the label
+        color = DARK_GRAY
+        if is_on:
+            color = OUTLINE_COLOR
         label = "Check"
         font_size = 16
         font = 'sans-serif'
         padding = 10
-        self.button_label = canvas.create_text(
-            x + padding,
-            self.top_y + padding,
-            label,
-            font_size = font_size,
-            font = font,
-            color = OUTLINE_COLOR
+        self.button.append(
+            canvas.create_text(
+                x + padding,
+                self.top_y + padding,
+                label,
+                font_size = font_size,
+                font = font,
+                color = color
+            )
         )
 
     def show_button(self, canvas):
@@ -495,6 +555,21 @@ class Guess:
 
         # Update the color
         canvas.set_color(code, color)
+
+        # Enable the check button if done
+        if not self.has_blanks():
+            self._render_button(canvas, True)
+
+    def has_blanks(self):
+        """
+        Returns true if there are blanks in the code guesses
+        """
+        has_blanks = False
+        for guess in self.guesses:
+            if guess == '':
+                return True
+
+        return has_blanks
 
     def check(self, canvas, truth):
         """
@@ -523,10 +598,9 @@ class Guess:
                 unmatched_truth.remove(self.guesses[i])
 
         # Delete the Check button
-        canvas.delete(self.button)
-        canvas.delete(self.button_label)
-        self.button = None
-        self.button_label = None
+        for item in self.button:
+            canvas.delete(item)
+        self.button = []
 
         # Render the key pegs
         peg_colors = [ EMPTY_FILL_COLOR for _ in range(self.num_pegs)]
@@ -535,7 +609,6 @@ class Guess:
         self._render_keys(canvas, peg_colors)
     
         return self.guesses == truth
-
 
 
 def game_over(canvas, truth, is_winner, num_pegs):
@@ -610,10 +683,14 @@ def play_row(canvas, guess, color_picker, truth):
         overlapping_list = get_overlapping(canvas)
         if overlapping_list:
             for overlapping in overlapping_list:
-                if overlapping == guess.button:
+                if overlapping in guess.button:
                     # Clicked on Check button
-                    is_correct = guess.check(canvas, truth)
-                    is_done = True
+                    if guess.has_blanks():
+                        pass
+                    else:
+                        is_correct = guess.check(canvas, truth)
+                        is_done = True
+
                     selected_color = None
                     color_picker.reset(canvas)
 
@@ -703,12 +780,18 @@ def display_info(canvas, has_duplicates):
     x += KEY_SIZE + 2*KEY_PADDING
     draw_info_text(canvas, x, y, "PARTIAL MATCH")
 
-    # Add duplicate info    
+    # Add duplicate info   
+    y -= 2*KEY_PADDING 
     x += CODE_PADDING + 100
     text = "NO DUPLICATES"
     if has_duplicates:
         text = "DUPLICATES ALLOWED"
     draw_info_text(canvas, x, y, text)
+
+    # Add blanks info
+    text = "NO BLANKS"
+    y += CODE_PADDING
+    draw_info_text(canvas, x, y, text)    
   
 def draw_info_text(canvas, x, y, text):
     """
