@@ -209,13 +209,15 @@ class GameSettings:
         # Play button
         x = CODE_PADDING
         y += 2*(CODE_SIZE + CODE_PADDING)
-        offset = 4
+        offset = 5
         start_width = 150
         start_height = CODE_PADDING + CODE_PADDING
         self.start_button.append(
             canvas.create_polygon(
                 x-offset, y-offset,
                 x + start_width + offset, y-offset,
+                x + start_width, y,
+                x, y+start_height, 
                 x-offset, y + start_height + offset,
                 color=LIGHT_GRAY,
                 outline=LIGHT_GRAY
@@ -224,13 +226,14 @@ class GameSettings:
         self.start_button.append(
             canvas.create_polygon(
                 x + start_width + offset, y-offset,
-                x + start_width + offset, y + start_height + offset,
+                x + start_width, y,
+                x, y + start_height,
                 x-offset, y + start_height + offset,
+                x + start_width + offset, y + start_height + offset,
                 color=DARK_GRAY,
                 outline=DARK_GRAY
             )
         )
-
         self.start_button.append(
             canvas.create_rectangle(
                 x,
@@ -486,23 +489,28 @@ class Guess:
         x = self.left_x + (CODE_SIZE+CODE_PADDING)*self.num_pegs
         y = self.top_y
         offset = 4
-
+    
         # Draw the button background (top)
         self.button.append(
             canvas.create_polygon(
                 x-offset, y-offset,
                 x + BUTTON_WIDTH + offset, y-offset,
+                x + BUTTON_WIDTH, y,
+                x, y+BUTTON_HEIGHT, 
                 x-offset, y + BUTTON_HEIGHT + offset,
                 color=LIGHT_GRAY,
                 outline=LIGHT_GRAY
             )
         )
+                
         # Draw the button background (bottom)
         self.button.append(
             canvas.create_polygon(
                 x + BUTTON_WIDTH + offset, y-offset,
-                x + BUTTON_WIDTH + offset, y + BUTTON_HEIGHT + offset,
+                x + BUTTON_WIDTH, y,
+                x, y + BUTTON_HEIGHT,
                 x-offset, y + BUTTON_HEIGHT + offset,
+                x + BUTTON_WIDTH + offset, y + BUTTON_HEIGHT + offset,
                 color=DARK_GRAY,
                 outline=DARK_GRAY
             )
