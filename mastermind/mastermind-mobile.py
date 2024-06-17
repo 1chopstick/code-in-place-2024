@@ -1,6 +1,7 @@
 from graphics import Canvas
 import random
 import math
+import time
 
 """
 File: mastermind-mobile.py
@@ -11,6 +12,7 @@ This is the mobile-friendly version, without drag-and-drop animation
 
 """
 
+# Constants
 NUM_CIRCLES = 4
 MAX_GUESSES = 12
 
@@ -35,6 +37,9 @@ DARK_GRAY = '#9a9a9a'
 CANVAS_WIDTH = 510
 CANVAS_HEIGHT = max(MAX_GUESSES+2, len(COLORS)+len(HARD_COLORS)+2) * (CODE_SIZE+CODE_PADDING) + CODE_PADDING
 DELAY = 0.1
+
+# Global
+_is_cip = False
 
 class GameSettings:
     """
@@ -250,19 +255,29 @@ class GameSettings:
             self._render_config_headers(canvas, x+CODE_PADDING, y+padding, text)
         )
 
+        # Update
+        update_canvas(canvas)       
+
     def _render_bg_button(self, canvas, x, y):
         """
         Render rectangle background for selections
         """
-        width = 200
+        global _is_cip
+        color = EMPTY_FILL_COLOR
+        if not _is_cip:
+            color = ''
+
+        width = 200            
         return canvas.create_rectangle(
             x - KEY_PADDING,
             y - KEY_PADDING,
             x + KEY_PADDING + width,
             y + KEY_PADDING + CODE_SIZE,
-            EMPTY_FILL_COLOR,
-            EMPTY_FILL_COLOR
+            color,
+            color
         )
+        # Update
+        update_canvas(canvas)  
 
     def _render_circles(self, canvas, x, y, colors):
         """
@@ -279,7 +294,11 @@ class GameSettings:
                     colors[i],
                     OUTLINE_COLOR
                 )
-            )  
+            )
+
+        # Update
+        update_canvas(canvas)
+
         return circles
 
     def _render_arrow(self, canvas, x, y):
@@ -296,6 +315,9 @@ class GameSettings:
             outline=OUTLINE_COLOR
         )
 
+        # Update
+        update_canvas(canvas)   
+
     def _move_arrow(self, canvas, arrow, selection):
         """
         Move the arrow graphic to the selected setting
@@ -305,7 +327,9 @@ class GameSettings:
             x = self.arrow_location[selection][0] + offset
             y = self.arrow_location[selection][1] + offset
             canvas.moveto(arrow, x, y)
-
+        
+        # Update
+        update_canvas(canvas)  
 
     def _render_config_headers(self, canvas, x, y, text):
         """
@@ -322,6 +346,9 @@ class GameSettings:
             color = OUTLINE_COLOR
         )
 
+        # Update
+        update_canvas(canvas)
+
     def _render_config_text(self, canvas, x, y, text):
         """
         Render configuration label text
@@ -337,6 +364,9 @@ class GameSettings:
                 font = font,
                 color = OUTLINE_COLOR
             )   
+
+        # Update
+        update_canvas(canvas)
 
     def handle_config(self, canvas):
         """
@@ -404,6 +434,9 @@ class ColorPicker:
                 self.top_y + i*(CODE_SIZE+CODE_PADDING) + CODE_SIZE,
                 self.colors[i]
             )] = self.colors[i]
+        
+        # Update
+        update_canvas(canvas)
     
     def set_color(self, canvas, palette, selected_color):
         """
@@ -422,6 +455,9 @@ class ColorPicker:
             OUTLINE_COLOR
         )
 
+        # Update
+        update_canvas(canvas)
+
     def reset(self, canvas):
         """
         Clear the selected color
@@ -429,6 +465,9 @@ class ColorPicker:
         self.selected_color = None
         if self.selected_palette:
             canvas.delete(self.selected_palette)
+
+        # Update
+        update_canvas(canvas)      
 
 
 class Guess:
@@ -459,6 +498,9 @@ class Guess:
                 OUTLINE_COLOR
             ))
 
+        # Update
+        update_canvas(canvas)
+
     def _render_keys(self, canvas, colors):
         """
         Render the feedback key pegs
@@ -477,6 +519,9 @@ class Guess:
                     OUTLINE_COLOR
                 )
                 color_index += 1
+
+        # Update
+        update_canvas(canvas)      
 
     def _render_button(self, canvas, is_on = False):
         """
@@ -502,7 +547,7 @@ class Guess:
                 outline=LIGHT_GRAY
             )
         )
-                
+
         # Draw the button background (bottom)
         self.button.append(
             canvas.create_polygon(
@@ -547,6 +592,9 @@ class Guess:
             )
         )
 
+        # Update
+        update_canvas(canvas)
+
     def show_button(self, canvas):
         """
         Show the 'Check' button
@@ -567,6 +615,9 @@ class Guess:
         # Enable the check button if done
         if not self.has_blanks():
             self._render_button(canvas, True)
+
+        # Update
+        update_canvas(canvas)
 
     def has_blanks(self):
         """
@@ -616,6 +667,9 @@ class Guess:
             peg_colors[i] = key_matches[i]
         self._render_keys(canvas, peg_colors)
     
+        # Update
+        update_canvas(canvas)
+
         return self.guesses == truth
 
 
@@ -660,6 +714,9 @@ def game_over(canvas, truth, is_winner, num_pegs):
             truth[i],
             'black'
         )
+
+    # Update
+    update_canvas(canvas)  
 
 def get_overlapping(canvas):
     """
@@ -879,6 +936,13 @@ def play_mastermind(canvas, difficulty, has_duplicates):
     # Done!
     game_over(canvas, truth, is_winner, num_pegs)    
 
+def update_canvas(canvas):
+    """
+    Call update canvas for non-CIP IDE
+    """
+    global _is_cip
+    if not _is_cip:
+        canvas.update()
 
 def main():
     """
@@ -886,6 +950,11 @@ def main():
     """
     # Setup
     canvas = Canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    if hasattr(canvas, 'canvas'):
+        global _is_cip
+        _is_cip = True
+
     display_header(canvas)
     
     # User settings
@@ -907,6 +976,10 @@ def main():
     # Play the game
     print("Starting game (Mode: {}) (Allow duplicates: {})".format(difficulty, has_duplicates))
     play_mastermind(canvas, difficulty, has_duplicates)
+
+    # wait for the user to close the window
+    if not _is_cip:
+        canvas.mainloop()        
 
 if __name__ == '__main__':
     main()
