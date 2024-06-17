@@ -37,7 +37,7 @@ CANVAS_WIDTH = SIZE * 30
 PLAY_HEIGHT = SIZE * 30
 CANVAS_HEIGHT = PLAY_HEIGHT + 35
 
-START_LENGTH = 5
+START_LENGTH = 3
 START_DIRECTION = 'right'
 
 BG_COLOR = 'white'
@@ -160,13 +160,17 @@ class Snake:
             # Update the current direction
             self.direction = new_direction
 
+        # Check for walls
+        new_x = head_x + x_offset
+        new_y = head_y + y_offset        
+        if self.direction == 'right' and new_x >= CANVAS_WIDTH:
+            new_x = CANVAS_WIDTH - SIZE + 0.1
+        elif self.direction == 'down' and new_y >= PLAY_HEIGHT:
+            new_y = PLAY_HEIGHT - SIZE + 0.1    
+
         # Move the tail to the new head
         tail = self.snake.pop()
-        canvas.moveto(
-            tail,
-            head_x + x_offset,
-            head_y + y_offset
-        )
+        canvas.moveto(tail, new_x, new_y)
         self.snake.insert(0, tail)
         
         # Update canvas
@@ -266,12 +270,12 @@ def check_for_collisions(canvas, snake, food):
     scored = False
     snake_x, snake_y = snake.get_coords(canvas)
     # Check for walls
-    if snake_x <= 0 or (snake_x+SIZE) >= CANVAS_WIDTH:
+    if snake_x < 0 or (snake_x+SIZE) > CANVAS_WIDTH:
         print("x out of bounds")
         is_game_over = True
         return is_game_over, scored
 
-    if snake_y <= 0 or (snake_y+SIZE) >= PLAY_HEIGHT:
+    if snake_y < 0 or (snake_y+SIZE) > PLAY_HEIGHT:
         print("y out of bounds")
         is_game_over = True
         return is_game_over, scored
