@@ -4,6 +4,8 @@ Play the classic game of Mastermind [here](https://codeinplace.stanford.edu/cip4
 
 For the tablet-friendly version, click [here](https://codeinplace.stanford.edu/cip4/share/B2IY1YJYyVZNcSg8LeNe). (It does not appear to work very well on the phone, the mouse positions seems off)
 
+<img src="mastermind.png" width="500">
+
 ## Project Proposal
 
 ### Milestones
