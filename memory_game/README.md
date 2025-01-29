@@ -16,3 +16,5 @@ Play it [here](https://codeinplace.stanford.edu/cip4/share/C9ltPTc1Y9TF75d5QNr3)
 Version 1 needed too many variables to keep track of state, created implementation with Card class to better manage variables.
 
 Play it [here](https://codeinplace.stanford.edu/cip4/share/lnaPDLEWdV1ebA7JjV2T)
+
+<img src="memory.png" width="500">
